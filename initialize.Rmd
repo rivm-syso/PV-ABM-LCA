@@ -1,0 +1,148 @@
+---
+title: "Read python scripts in R"
+output: github_document
+editor_options: 
+  chunk_output_type: console
+---
+
+To prepare your Rstudio environment to run the python code the reticulate package is needed. The following python packages are required for running the ABM model.
+
+On new installations or instances of R being used:
+
+```{r virtualenv creation}
+# library(reticulate)
+
+# new = "no" # or yes
+# 
+# if (new=="yes") {
+#   
+#   env_NAME <- "r-Mesa"
+#   version <- "3.8"
+#   install_python(version)
+#   packages <- readLines("requirements.txt")
+# 
+#   
+#   # create an environment to use
+#   virtualenv_create(env_NAME, version=version) 
+#   # virtualenv_install(env_NAME, packages = packages)
+#   
+#   virtualenv_install(env_NAME, "scipy")
+#   # virtualenv_install(env_NAME, "pandas")
+#   # virtualenv_install(env_NAME, "numpy")
+#   # virtualenv_install(env_NAME, "matplotlib")
+#   virtualenv_install(env_NAME, "pyplot")
+#   virtualenv_install(env_NAME, packages = c("Mesa==1.2.1"))
+#   virtualenv_install(env_NAME, packages = c("Networkx==2.7"))
+#   # virtualenv_install(env_NAME, "openpyxl")
+#   
+#   print (paste("virtual environment",env_NAME,"created"))
+#   # these give errors on install, but are available anyway? (no errors even though required...)
+# 
+# } else print ("virtual environment r-ABM will be used")
+
+```
+
+```{r conda_env creation}
+library(reticulate)
+
+new = "yes" # or yes
+
+if (new=="yes") {
+  
+  env_NAME <- "r-Mesa-conda"
+  version <- "3.8.18"
+  install_python(version)
+  packages <- readLines("requirements.txt")
+  
+### export and save environment to yml file
+  # conda_export(env_NAME, file = "mesa111623.yml",json = FALSE)
+  # conda_create(env_NAME, channel = c("conda-forge"), environment = "env_mesa111623.yml")
+
+  # virtualenv_list() # this can be used to see existing environments to use
+  
+  # create an environment to use
+  conda_create(env_NAME, version=version, channel = c("conda-forge"))
+  conda_install(env_NAME, packages = packages)
+  
+  #conda_install(env_NAME, packages = c("Mesa==1.2.1"))
+  #conda_install(env_NAME, "scipy")
+  #conda_install(env_NAME, "matplotlib")
+  
+  #conda_install(env_NAME, packages = c("Networkx==2.7"))
+
+  
+  print (paste("conda environment",env_NAME,"created"))
+
+} else print ("existent conda environment will be used")
+
+```
+Now you are ready to run python code using reticulate.
+
+Fr running the ABM model we use config.py to setup the relevant parameters and run main.py.
+
+```{r}
+
+startTime <- Sys.time()
+
+library(reticulate)
+
+use_virtualenv("r-ABM-conda1")
+# use_condaenv("r-Mesa-conda")
+
+# prints recorded time
+getwd()
+setwd(here::here()) 
+
+# source_python("ABM_CE_PV_MultipleRun.py")
+
+py_run_file("ABM_CE_PV_MultipleRun.py")
+
+endTime <- Sys.time()
+
+
+print(endTime - startTime)
+```
+
+Unfortunately the model can only be run again after restarting it. This means cleaning the memory (R environment) and restarting R (Ctrl+shift+F10) and running the above code again.
+
+It is also possible to run python code in a chunk like this, see reticulate doc's for more info.
+
+```{r}
+
+
+
+  library(reticulate)
+  use_virtualenv("r-ABM2")
+  # source("batch.R")
+  # py_run_string(paste0("reg='",batch$reg[i],"'"))
+  # py_run_string(paste0("mat='",batch$mat[i],"'"))
+  # py_run_string(paste0("sel='",batch$sel[i],"'"))
+  # prints recorded time
+  # getwd()
+  # setwd("C:/Users/quikj/OneDrive - rivm.nl/Git projects/ABM_NL_EU") #check
+  try(source_python('main.py'))
+  
+  rm(list = ls()[c(-grep("i",ls()))])
+  detach("package:reticulate", unload=TRUE)
+  
+  .rs.restartR() 
+
+  ls()
+  grep("i",ls(),fixed=TRUE)
+```
+
+
+
+```{python}
+
+import os
+import sys
+
+mainfolder = os.getcwd() # Set folder to where the script is
+
+if os.path.isfile('main.py') == False:
+    sys.exit("Main folder setting is not correct. Script stopped, please try again from the correct folder.")
+exit()
+
+```
+

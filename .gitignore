@@ -211,8 +211,8 @@ cython_debug/
 #.idea/
 
 #Other files
-*.zip
-*.csv
+#*.zip
+#*.csv
 
 #ouput figures
 figures/*

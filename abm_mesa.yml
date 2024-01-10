@@ -1,0 +1,9 @@
+name: mesa_abm
+channels:
+  - conda-forge
+dependencies:
+  - python=3.8
+  - mesa=1.2.1
+  - scipy
+  - matplotlib
+  - networkx=2.7

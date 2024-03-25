@@ -8,6 +8,7 @@ Agent - Consumer
 """
 
 from mesa import Agent
+from Metamodel_HDMR import Metamodel_HDMR as hdmr
 import numpy as np
 import random
 from collections import OrderedDict
@@ -379,12 +380,25 @@ class Consumers(Agent):
                 max_cost = max(abs(i) for i in pbc_choice)
                 pbc_choice = [i / max_cost for i in pbc_choice]
         return [weight_pbc * -1 * max(i, 0) for i in pbc_choice]
+    
+    def mat_depl_effect(self, x):
+        """
+        Calculate the effect of material depletion on the pro-environmental
+        attitude level of agents.
+        """
+        (y, (m1, m2)) = hdmr(x)
+        threshold = 2E-5
+        if y > threshold:
+            return 0.5
+        else:
+            return 0
 
     def tpb_attitude(self, decision, att_levels, att_level, weight_a):
         """
         Calculate pro-environmental attitude component of EoL TPB rule. Options
         considered pro environmental get a higher score than other options.
         """
+        mat_depl_effect = self.mat_depl_effect
         for i in range(len(att_levels)):
             if decision == "EoL_pathway":
                 if list(self.model.all_EoL_pathways.keys())[i] == "repair" or \
@@ -393,9 +407,9 @@ class Consumers(Agent):
                         "recycle":
                     att_levels[i] = att_level
                     # HERE modification for encouraging recycling
-                    # if list(self.model.all_EoL_pathways.keys())[i] ==
-                    # "recycle":
-                    # att_levels[i] = att_level * 1.0
+                    if list(self.model.all_EoL_pathways.keys())[i] == "recycle":
+                        mat_depl_mult = 1 + mat_depl_effect
+                        att_levels[i] = att_level * mat_depl_mult
                 else:
                     att_levels[i] = 1 - att_level
             elif decision == "purchase_choice":

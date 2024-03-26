@@ -211,6 +211,27 @@ class Consumers(Agent):
         self.knowledge = self.extended_tpb_knowledge()
         #print("out func", self.knowledge)
 
+    def init_hdmr(self):
+        """
+        Initialize the metamodel input.
+        """
+        x_hdmr = [3.5, 509, 0.28, 0.85, 0.3,self.model.recovery_fractions["Copper"], 2.63, 10.08, 4.71, 7.65, 
+                  self.model.product_lifetime, self.model.init_eol_rate["landfill"]/(self.model.init_eol_rate["recycle"] + self.model.init_eol_rate["landfill"]),
+                  self.model.init_eol_rate["repair"]/(self.model.init_eol_rate["recycle"] + self.model.init_eol_rate["landfill"] + self.model.init_eol_rate["repair"]),
+                  self.model.recovery_fractions["Aluminum"], self.model.recovery_fractions["Glass"], self.model.recovery_fractions["Silicon"],
+                  self.model.recovery_fractions["Silver"], 0.99, 0.99, 110, 185, 85.26 , 1.07]   
+        self.x_hdmr = np.array(x_hdmr).reshape((23, 1))
+
+    def update_metamodel_inputs(self):
+        """
+        Update metamodel inputs according to evolving EoL fractions
+        """
+        self.x_hdmr = np.array([3.5, 509, 0.28, 0.85, 0.3,self.model.recovery_fractions["Copper"], 2.63, 10.08, 4.71, 7.65, self.model.product_lifetime,
+                                self.model.report_output("product_new_landfilled")/(self.model.report_output("product_new_landfilled") + self.model.report_output("product_new_recycled")), 
+                                self.model.report_output("product_new_repaired")/(self.model.report_output("product_new_landfilled") + self.model.report_output("product_new_recycled")+ self.model.report_output("product_new_repaired")),
+                                self.model.recovery_fractions["Aluminum"], self.model.recovery_fractions["Glass"], self.model.recovery_fractions["Silicon"],
+                                self.model.recovery_fractions["Silver"], 0.99, 0.99, 110, 185, 85.26 , 1.07]).reshape((23, 1))   
+
     def update_transport_costs(self):
         """
         Update transportation costs according to the (evolving) mass of waste.
@@ -381,24 +402,26 @@ class Consumers(Agent):
                 pbc_choice = [i / max_cost for i in pbc_choice]
         return [weight_pbc * -1 * max(i, 0) for i in pbc_choice]
     
-    def mat_depl_effect(self, x):
+    def mat_depl_effect(self):
         """
         Calculate the effect of material depletion on the pro-environmental
         attitude level of agents.
         """
-        (y, (m1, m2)) = hdmr(x)
+        self.init_hdmr()
+        (y, (m1, m2)) = hdmr(self.x_hdmr)
         threshold = 2E-5
         if y > threshold:
-            return 0.5
+            mat_depl_effect = 0.5
         else:
-            return 0
+            mat_depl_effect = 0
+        return mat_depl_effect
 
     def tpb_attitude(self, decision, att_levels, att_level, weight_a):
         """
         Calculate pro-environmental attitude component of EoL TPB rule. Options
         considered pro environmental get a higher score than other options.
         """
-        mat_depl_effect = self.mat_depl_effect
+        mat_depl_effect = self.mat_depl_effect()
         for i in range(len(att_levels)):
             if decision == "EoL_pathway":
                 if list(self.model.all_EoL_pathways.keys())[i] == "repair" or \
@@ -729,6 +752,8 @@ class Consumers(Agent):
         """
         Evolution of agent at each step
         """
+        if self.model.schedule.steps == 1:  # If it's the second step (0-indexed)
+            self.update_metamodel_inputs()
         self.product_mass_output_metrics()
         self.product_storage_to_other = 0
         self.product_storage_to_other_ref = 0

@@ -850,10 +850,10 @@ def Metamodel_HDMR(x_in, *varargin):
 			first_order_ind_total = np.sum(first_order_ind,axis=0)
 
 			# Evaluate second-order indices
-			second_order_ind = np.zeros((n*(n-1)/2, x_in.shape[1]))
+			second_order_ind = np.zeros((n*(n-1)//2, x_in.shape[1]))
 
 			nij = -1
-			sumf = np.zeros((n*(n-1)/2, x_in.shape[1]))
+			sumf = np.zeros((n*(n-1)//2, x_in.shape[1]))
 			for n1_ in range(n-1):
 				for n2_ in range(n1_+1,n):
 					nij = nij + 1

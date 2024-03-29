@@ -211,27 +211,6 @@ class Consumers(Agent):
         self.knowledge = self.extended_tpb_knowledge()
         #print("out func", self.knowledge)
 
-    def init_hdmr(self):
-        """
-        Initialize the metamodel input.
-        """
-        x_hdmr = [3.5, 509, 0.28, 0.85, 0.3,self.model.recovery_fractions["Copper"], 2.63, 10.08, 4.71, 7.65, 
-                  self.model.product_lifetime, self.model.init_eol_rate["landfill"]/(self.model.init_eol_rate["recycle"] + self.model.init_eol_rate["landfill"]),
-                  self.model.init_eol_rate["repair"]/(self.model.init_eol_rate["recycle"] + self.model.init_eol_rate["landfill"] + self.model.init_eol_rate["repair"]),
-                  self.model.recovery_fractions["Aluminum"], self.model.recovery_fractions["Glass"], self.model.recovery_fractions["Silicon"],
-                  self.model.recovery_fractions["Silver"], 0.99, 0.99, 110, 185, 85.26 , 1.07]   
-        self.x_hdmr = np.array(x_hdmr).reshape((23, 1))
-
-    def update_metamodel_inputs(self):
-        """
-        Update metamodel inputs according to evolving EoL fractions
-        """
-        self.x_hdmr = np.array([3.5, 509, 0.28, 0.85, 0.3,self.model.recovery_fractions["Copper"], 2.63, 10.08, 4.71, 7.65, self.model.product_lifetime,
-                                self.model.report_output("product_new_landfilled")/(self.model.report_output("product_new_landfilled") + self.model.report_output("product_new_recycled")), 
-                                self.model.report_output("product_new_repaired")/(self.model.report_output("product_new_landfilled") + self.model.report_output("product_new_recycled")+ self.model.report_output("product_new_repaired")),
-                                self.model.recovery_fractions["Aluminum"], self.model.recovery_fractions["Glass"], self.model.recovery_fractions["Silicon"],
-                                self.model.recovery_fractions["Silver"], 0.99, 0.99, 110, 185, 85.26 , 1.07]).reshape((23, 1))   
-
     def update_transport_costs(self):
         """
         Update transportation costs according to the (evolving) mass of waste.
@@ -407,10 +386,9 @@ class Consumers(Agent):
         Calculate the effect of material depletion on the pro-environmental
         attitude level of agents.
         """
-        self.init_hdmr()
-        (y, (m1, m2)) = hdmr(self.x_hdmr)
-        threshold = 2E-5
-        if y > threshold:
+        y = self.model.impact_calculation()
+        threshold = 2.5e-5
+        if (y) > threshold:
             mat_depl_effect = 0.5
         else:
             mat_depl_effect = 0
@@ -584,6 +562,7 @@ class Consumers(Agent):
             self.update_eol_volumes(self.EoL_pathway, self.number_product_EoL +
                                     self.product_storage_to_other,
                                     product_type, self.product_storage_to_other)
+            # self.update_eol_fu(self.EoL_pathway, self.number_product_EoL)
         else:
             limited_paths["repair"] = False
             limited_paths["sell"] = False
@@ -595,11 +574,26 @@ class Consumers(Agent):
                     self.perceived_behavioral_control, self.w_pbc_eol,
                     self.attitude_levels_pathways, self.attitude_level,
                     self.w_a_eol)
+            # self.update_eol_fu(self.used_EoL_pathway, self.number_used_product_EoL)
             self.update_eol_volumes(self.used_EoL_pathway,
                                     self.number_used_product_EoL,
                                     product_type,
                                     self.product_storage_to_other)
 
+    # def update_eol_fu(self, eol_pathway, managed_waste):
+    #     """"
+    #     """
+    #     if eol_pathway == "repair":
+    #         self.fu_product_repaired += managed_waste
+    #     elif eol_pathway == "sell":
+    #         self.fu_product_sold += managed_waste
+    #     elif eol_pathway == "recycle":
+    #         self.fu_product_recycled += managed_waste
+    #     elif eol_pathway == "landfill":
+    #         self.fu_product_landfilled += managed_waste
+    #     else:
+    #         self.fu_product_hoarded += managed_waste
+                
     def update_eol_volumes(self, eol_pathway, managed_waste, product_type,
                            storage):
         """"
@@ -752,8 +746,6 @@ class Consumers(Agent):
         """
         Evolution of agent at each step
         """
-        if self.model.schedule.steps == 1:  # If it's the second step (0-indexed)
-            self.update_metamodel_inputs()
         self.product_mass_output_metrics()
         self.product_storage_to_other = 0
         self.product_storage_to_other_ref = 0

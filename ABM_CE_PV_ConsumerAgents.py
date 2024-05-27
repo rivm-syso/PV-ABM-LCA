@@ -8,6 +8,7 @@ Agent - Consumer
 """
 
 from mesa import Agent
+from Metamodel_HDMR import Metamodel_HDMR as hdmr
 import numpy as np
 import random
 from collections import OrderedDict
@@ -379,12 +380,26 @@ class Consumers(Agent):
                 max_cost = max(abs(i) for i in pbc_choice)
                 pbc_choice = [i / max_cost for i in pbc_choice]
         return [weight_pbc * -1 * max(i, 0) for i in pbc_choice]
+    
+    def mat_depl_effect(self):
+        """
+        Calculate the effect of material depletion on the pro-environmental
+        attitude level of agents.
+        """
+        y = self.model.impact_calculation()
+        threshold = 2.5e-5
+        if (y) > threshold:
+            mat_depl_effect = 0.5
+        else:
+            mat_depl_effect = 0
+        return mat_depl_effect
 
     def tpb_attitude(self, decision, att_levels, att_level, weight_a):
         """
         Calculate pro-environmental attitude component of EoL TPB rule. Options
         considered pro environmental get a higher score than other options.
         """
+        mat_depl_effect = self.mat_depl_effect()
         for i in range(len(att_levels)):
             if decision == "EoL_pathway":
                 if list(self.model.all_EoL_pathways.keys())[i] == "repair" or \
@@ -393,9 +408,9 @@ class Consumers(Agent):
                         "recycle":
                     att_levels[i] = att_level
                     # HERE modification for encouraging recycling
-                    # if list(self.model.all_EoL_pathways.keys())[i] ==
-                    # "recycle":
-                    # att_levels[i] = att_level * 1.0
+                    if list(self.model.all_EoL_pathways.keys())[i] == "recycle":
+                        mat_depl_mult = 1 + mat_depl_effect
+                        att_levels[i] = att_level * mat_depl_mult
                 else:
                     att_levels[i] = 1 - att_level
             elif decision == "purchase_choice":
@@ -547,6 +562,7 @@ class Consumers(Agent):
             self.update_eol_volumes(self.EoL_pathway, self.number_product_EoL +
                                     self.product_storage_to_other,
                                     product_type, self.product_storage_to_other)
+            # self.update_eol_fu(self.EoL_pathway, self.number_product_EoL)
         else:
             limited_paths["repair"] = False
             limited_paths["sell"] = False
@@ -558,11 +574,26 @@ class Consumers(Agent):
                     self.perceived_behavioral_control, self.w_pbc_eol,
                     self.attitude_levels_pathways, self.attitude_level,
                     self.w_a_eol)
+            # self.update_eol_fu(self.used_EoL_pathway, self.number_used_product_EoL)
             self.update_eol_volumes(self.used_EoL_pathway,
                                     self.number_used_product_EoL,
                                     product_type,
                                     self.product_storage_to_other)
 
+    # def update_eol_fu(self, eol_pathway, managed_waste):
+    #     """"
+    #     """
+    #     if eol_pathway == "repair":
+    #         self.fu_product_repaired += managed_waste
+    #     elif eol_pathway == "sell":
+    #         self.fu_product_sold += managed_waste
+    #     elif eol_pathway == "recycle":
+    #         self.fu_product_recycled += managed_waste
+    #     elif eol_pathway == "landfill":
+    #         self.fu_product_landfilled += managed_waste
+    #     else:
+    #         self.fu_product_hoarded += managed_waste
+                
     def update_eol_volumes(self, eol_pathway, managed_waste, product_type,
                            storage):
         """"

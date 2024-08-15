@@ -386,9 +386,9 @@ class Consumers(Agent):
         Calculate the effect of material depletion on the pro-environmental
         attitude level of agents.
         """
-        y = self.model.impact_calculation()
-        threshold = 2.5e-5
-        if (y) > threshold:
+       # y = self.model.impact_calculation()
+        threshold = 2.7e-5
+        if (self.model.impact_count) > threshold:
             mat_depl_effect = 0.5
         else:
             mat_depl_effect = 0

@@ -507,6 +507,7 @@ class ABM_CE_PV(Model):
         landfill_cost = [x + self.transportation_cost_rpr_ldf for x in
                          landfill_cost]
         self.x_hdmr = self.init_hdmr()
+        self.impact_count = self.impact_calculation()
 
         # Create agents, G nodes labels are equal to agents' unique_ID
         for node in self.G.nodes():
@@ -554,7 +555,7 @@ class ABM_CE_PV(Model):
             "Average weight of waste": lambda c:
             self.report_output("weight"),
             "Impact count": lambda c:
-            self.impact_calculation(),   ###HERE added reporting of impact
+            self.impact_count,   ###HERE added reporting of impact
             "Agents repairing": lambda c: self.count_EoL("repairing"),
             "Agents selling": lambda c: self.count_EoL("selling"),
             "Agents recycling": lambda c: self.count_EoL("recycling"),
@@ -689,11 +690,15 @@ class ABM_CE_PV(Model):
         """
         Update metamodel inputs according to evolving EoL fractions
         """
+        product_recycled = self.report_output("product_new_recycled")+self.report_output("product_used_recycled")
+        product_landfilled = self.report_output("product_new_landfilled")+self.report_output("product_used_landfilled")
+        product_repaired = self.report_output("product_new_repaired")+self.report_output("product_used_repaired")
+
         x_hdmr = [(3.5-0.5)/(3.5-0.5), (509-1)/(509-1), (0.28-0.25)/(0.31-0.25), (0.85-0.8)/(0.9-0.8), (0.3-0.2)/(0.7-0.3),
                   (self.recovery_fractions["Copper"] - 0.5)/(0.99-0.5), (2.63-1.22)/(6.27-1.22), (10.08-4.6)/(23.2-4.6), 
                   (4.71-2.11)/(9.64-2.11), (7.65-2.55)/(7.65-2.55), (self.product_lifetime-11.5)/(49.33-11.5), 
-                  (self.report_output("product_new_landfilled")/(self.report_output("product_new_landfilled") + self.report_output("product_new_recycled")))/0.99, 
-                  (self.report_output("product_new_repaired")/(self.report_output("product_new_landfilled") + self.report_output("product_new_recycled")+ self.report_output("product_new_repaired")))/0.99,
+                  (product_landfilled/(product_landfilled + product_recycled))/0.99, 
+                  (product_repaired/(product_landfilled + product_recycled+ product_repaired))/0.99,
                   (self.recovery_fractions["Aluminum"]-0.5)/(0.99-0.5), (self.recovery_fractions["Glass"]-0.5)/(0.99-0.5), 
                   (self.recovery_fractions["Silicon"]-0.5)/(0.99-0.5), (self.recovery_fractions["Silver"]-0.5)/(0.99-0.5), 1, 1, 
                   (110-49.26)/(236.71-49.26), (185-86.65)/(418.26-86.65), (85.26-40.27)/(185.52-40.27), (1.07-0.49)/(2.37-0.49)]
@@ -702,8 +707,8 @@ class ABM_CE_PV(Model):
     def impact_calculation (self):
         """
         """
-        (y, (m1, m2)) = hdmr(self.x_hdmr)
-        return y
+        (impact_count, (m1, m2)) = hdmr(self.x_hdmr)
+        return impact_count
 
     def shortest_paths(self, target_states, distances_to_target):
         """
@@ -1024,8 +1029,6 @@ class ABM_CE_PV(Model):
         self.total_yearly_new_products = 0
         self.consumer_used_product = 0
         self.yearly_repaired_waste = 0
-        if self.schedule.steps > 0:  # From the second step onwards the inputs are updated
-            self.x_hdmr = self.update_metamodel_inputs()
         self.dynamic_product_average_wght = \
             self.average_mass_per_function_model(
                 self.copy_total_number_product)
@@ -1035,4 +1038,7 @@ class ABM_CE_PV(Model):
         self.update_dynamic_lifetime()
         self.average_price_per_function_model()
         self.schedule.step()
+        self.impact_count = self.impact_calculation()
+        if self.schedule.steps > 0:  # From the second step onwards the inputs are updated
+            self.x_hdmr = self.update_metamodel_inputs()
         self.clock = self.clock + 1

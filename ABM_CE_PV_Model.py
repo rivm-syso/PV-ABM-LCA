@@ -223,9 +223,10 @@ class ABM_CE_PV(Model):
                  num_refurbishers=15,
                  consumers_distribution={"residential": 1,
                                          "commercial": 0., "utility": 0.},
-                 init_eol_rate={"repair": 0.005, "sell": 0.01,
-                                   "recycle": 0.1, "landfill": 0.4425,
-                                   "hoard": 0.4425},
+                ## Modified the initial EoL rates, due to exclusion of pathways of repair and hoard
+                 init_eol_rate={"repair": 0., "sell": 0.02,
+                                   "recycle": 0.18, "landfill": 0.8,
+                                   "hoard": 0.},
                  init_purchase_choice={"new": 0.9995, "used": 0.0005,
                                        "certified": 0},
                  total_number_product=[38, 38, 38, 38, 38, 38, 38, 139, 251,
@@ -255,9 +256,9 @@ class ABM_CE_PV(Model):
                  w_pbc_reuse=0.382,
                  w_a_reuse=0.464,
                  product_lifetime=30,
-                 all_EoL_pathways={"repair": True, "sell": True,
+                 all_EoL_pathways={"repair": False, "sell": True,
                                    "recycle": True, "landfill": True,
-                                   "hoard": True},
+                                   "hoard": False},
                  max_storage=[1, 8, 4],
                  att_distrib_param_eol=[0.544, 0.1],
                  att_distrib_param_reuse=[0.223, 0.262],
@@ -680,7 +681,7 @@ class ABM_CE_PV(Model):
                   (self.recovery_fractions["Copper"] - 0.5)/(0.99-0.5), (2.63-1.22)/(6.27-1.22), (10.08-4.6)/(23.2-4.6), 
                   (4.71-2.11)/(9.64-2.11), (7.65-2.55)/(7.65-2.55), (self.product_lifetime-11.5)/(49.33-11.5), 
                   (self.init_eol_rate["landfill"]/(self.init_eol_rate["recycle"] + self.init_eol_rate["landfill"]))/0.99,
-                  (self.init_eol_rate["repair"]/(self.init_eol_rate["recycle"] + self.init_eol_rate["landfill"] + self.init_eol_rate["repair"]))/0.99,
+                  self.init_eol_rate["sell"]/0.99,
                   (self.recovery_fractions["Aluminum"]-0.5)/(0.99-0.5), (self.recovery_fractions["Glass"]-0.5)/(0.99-0.5), 
                   (self.recovery_fractions["Silicon"]-0.5)/(0.99-0.5), (self.recovery_fractions["Silver"]-0.5)/(0.99-0.5), 1, 1, 
                   (110-49.26)/(236.71-49.26), (185-86.65)/(418.26-86.65), (85.26-40.27)/(185.52-40.27) , (1.07-0.49)/(2.37-0.49)]   
@@ -692,13 +693,13 @@ class ABM_CE_PV(Model):
         """
         product_recycled = self.report_output("product_new_recycled")+self.report_output("product_used_recycled")
         product_landfilled = self.report_output("product_new_landfilled")+self.report_output("product_used_landfilled")
-        product_repaired = self.report_output("product_new_repaired")+self.report_output("product_used_repaired")
+        product_sold = self.report_output("product_new_sold")+self.report_output("product_used_sold")
 
         x_hdmr = [(3.5-0.5)/(3.5-0.5), (509-1)/(509-1), (0.28-0.25)/(0.31-0.25), (0.85-0.8)/(0.9-0.8), (0.3-0.2)/(0.7-0.3),
                   (self.recovery_fractions["Copper"] - 0.5)/(0.99-0.5), (2.63-1.22)/(6.27-1.22), (10.08-4.6)/(23.2-4.6), 
                   (4.71-2.11)/(9.64-2.11), (7.65-2.55)/(7.65-2.55), (self.product_lifetime-11.5)/(49.33-11.5), 
                   (product_landfilled/(product_landfilled + product_recycled))/0.99, 
-                  (product_repaired/(product_landfilled + product_recycled+ product_repaired))/0.99,
+                  (product_sold/(product_landfilled + product_recycled+ product_sold))/0.99,
                   (self.recovery_fractions["Aluminum"]-0.5)/(0.99-0.5), (self.recovery_fractions["Glass"]-0.5)/(0.99-0.5), 
                   (self.recovery_fractions["Silicon"]-0.5)/(0.99-0.5), (self.recovery_fractions["Silver"]-0.5)/(0.99-0.5), 1, 1, 
                   (110-49.26)/(236.71-49.26), (185-86.65)/(418.26-86.65), (85.26-40.27)/(185.52-40.27), (1.07-0.49)/(2.37-0.49)]

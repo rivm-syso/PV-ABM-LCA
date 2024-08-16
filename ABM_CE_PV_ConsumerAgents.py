@@ -410,7 +410,7 @@ class Consumers(Agent):
                     # HERE modification for encouraging recycling
                     if list(self.model.all_EoL_pathways.keys())[i] == "recycle":
                         mat_depl_mult = 1 + mat_depl_effect
-                        att_levels[i] = att_level * mat_depl_mult
+                        att_levels[i] = min(att_level * mat_depl_mult, 1) ##max out att_level at 1
                 else:
                     att_levels[i] = 1 - att_level
             elif decision == "purchase_choice":
@@ -562,7 +562,6 @@ class Consumers(Agent):
             self.update_eol_volumes(self.EoL_pathway, self.number_product_EoL +
                                     self.product_storage_to_other,
                                     product_type, self.product_storage_to_other)
-            # self.update_eol_fu(self.EoL_pathway, self.number_product_EoL)
         else:
             limited_paths["repair"] = False
             limited_paths["sell"] = False
@@ -574,25 +573,10 @@ class Consumers(Agent):
                     self.perceived_behavioral_control, self.w_pbc_eol,
                     self.attitude_levels_pathways, self.attitude_level,
                     self.w_a_eol)
-            # self.update_eol_fu(self.used_EoL_pathway, self.number_used_product_EoL)
             self.update_eol_volumes(self.used_EoL_pathway,
                                     self.number_used_product_EoL,
                                     product_type,
                                     self.product_storage_to_other)
-
-    # def update_eol_fu(self, eol_pathway, managed_waste):
-    #     """"
-    #     """
-    #     if eol_pathway == "repair":
-    #         self.fu_product_repaired += managed_waste
-    #     elif eol_pathway == "sell":
-    #         self.fu_product_sold += managed_waste
-    #     elif eol_pathway == "recycle":
-    #         self.fu_product_recycled += managed_waste
-    #     elif eol_pathway == "landfill":
-    #         self.fu_product_landfilled += managed_waste
-    #     else:
-    #         self.fu_product_hoarded += managed_waste
                 
     def update_eol_volumes(self, eol_pathway, managed_waste, product_type,
                            storage):

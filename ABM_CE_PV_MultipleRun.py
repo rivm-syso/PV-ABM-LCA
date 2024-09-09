@@ -6,11 +6,18 @@ Created on Wed Nov 21 12:43 2019
 
 Run - one or several simulations with all states of outputs
 """
-
+# import cProfile
+# import pstats
 from ABM_CE_PV_Model import *
 import matplotlib.pyplot as plt
 import time
 
+##CHANGE TRIGGER HERE
+USE = True  # Set to False to use climate change labels
+if USE:
+    folder = "Resources"
+else:
+    folder = "ClimateChange"
 
 def run_model(number_run, number_steps):
     """
@@ -21,6 +28,18 @@ def run_model(number_run, number_steps):
     for j in range(number_run):
         # Reinitialize model
         t0 = time.time()
+        if j < 2:
+            model = ABM_CE_PV(
+                seed=0, threshold_concern=1.7e-5, threshold_no_concern=1.4e-5)
+        elif j < 3:
+            model = ABM_CE_PV(
+                seed=2, threshold_concern=3e-5, threshold_no_concern=1.4e-5)
+        elif j < 4:
+            model = ABM_CE_PV(
+                seed=3,threshold_concern=3e-5, threshold_no_concern=1.4e-5)
+        elif j < 5:
+            model = ABM_CE_PV(
+                seed=4, threshold_concern=3e-5, threshold_no_concern=1.4e-5)          
         if j < 30:
             model = ABM_CE_PV(
                 seed=j)
@@ -89,8 +108,8 @@ def run_model(number_run, number_steps):
         # Get results in a pandas DataFrame
         results_model = model.datacollector.get_model_vars_dataframe()
         results_agents = model.datacollector.get_agent_vars_dataframe()
-        results_model.to_csv("results/Results_model_run%s.csv" % j)
-        results_agents.to_csv("results/Results_agents.csv")
+        results_model.to_csv(f"results/{folder}/Results_model_run{j}.csv")
+        results_agents.to_csv(f"results/{folder}/Results_agents.csv")
         # Draw figures
         draw_graphs(False, True, model, results_agents, results_model)
         print("Run", j+1, "out of", number_run)
@@ -119,10 +138,11 @@ def draw_graphs(network, figures, model, results_agents, results_model):
     Draw different figures.
     """
     if network:
-        plt.figure(figsize=(12, 12))
-        nx.draw(model.H1, node_color=color_agents(
+        fig, ax = plt.subplots(figsize=(12, 12))
+        # plt.figure(figsize=(12, 12))
+        nx.draw_networkx(model.H1, node_color=color_agents(
             1, "Recycling", "recycle", "landfill", model, results_agents),
-                node_size=5, with_labels=False)
+                node_size=5, with_labels=False, ax=ax)
         # Draw other networks:
         # nx.draw(model.H1, node_color="lightskyblue")
         # nx.draw(model.H2, node_color="purple")
@@ -130,15 +150,18 @@ def draw_graphs(network, figures, model, results_agents, results_model):
         # nx.draw(model.G, with_labels=False)
     if figures:
         results_model[results_model.columns[2:7]].plot()
-        results_model[results_model.columns[15:20]].plot()
+        results_model[results_model.columns[16:21]].plot()
         plt.text(0.6, 0.7, 'Landfilling').set_color("red")
         plt.text(0.6, 0.8, 'Recycling').set_color("green")
         plt.text(0.6, 0.9, 'Other behavior').set_color("grey")
-    if network or figures:
-        plt.show()  # draw graph as desired and plot outputs
+#    if network or figures:
+#        plt.show()  # draw graph as desired and plot outputs
 
+### Run the model, change number of runs and steps as desired
+run_model(1, 30)
 
-run_model(5, 31)
+## Profiling
+# cProfile.run('run_model(1, 30)', 'run_model.profile')
 
-
-
+# p = pstats.Stats('run_model.profile')
+# p.sort_stats('cumulative').print_stats(10)  # Print the 10 most time-consuming functions

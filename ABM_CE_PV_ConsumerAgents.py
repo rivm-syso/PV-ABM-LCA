@@ -8,7 +8,6 @@ Agent - Consumer
 """
 
 from mesa import Agent
-from Metamodel_HDMR import Metamodel_HDMR as hdmr
 import numpy as np
 import random
 from collections import OrderedDict
@@ -386,10 +385,10 @@ class Consumers(Agent):
         Calculate the effect of material depletion on the pro-environmental
         attitude level of agents.
         """
-       # y = self.model.impact_calculation()
-        threshold = 2.7e-5
-        if (self.model.impact_count) > threshold:
+        if (self.model.impact_count) > self.model.threshold_concern:
             mat_depl_effect = 0.5
+        elif (self.model.impact_count) < self.model.threshold_no_concern:
+            mat_depl_effect = -0.5
         else:
             mat_depl_effect = 0
         return mat_depl_effect
@@ -406,13 +405,10 @@ class Consumers(Agent):
                         list(self.model.all_EoL_pathways.keys())[i] == "sell" \
                         or list(self.model.all_EoL_pathways.keys())[i] == \
                         "recycle":
-                    att_levels[i] = att_level
-                    # HERE modification for encouraging recycling
-                    if list(self.model.all_EoL_pathways.keys())[i] == "recycle":
-                        mat_depl_mult = 1 + mat_depl_effect
-                        att_levels[i] = min(att_level * mat_depl_mult, 1) ##max out att_level at 1
+                    mat_depl_mult = 1 + mat_depl_effect
+                    att_levels[i] = min(att_level * mat_depl_mult, 1) ##max out att_level at 1
                 else:
-                    att_levels[i] = 1 - att_level
+                    att_levels[i] = 1 - min(att_level * mat_depl_mult, 1)
             elif decision == "purchase_choice":
                 if self.purchase_choices[i] == "used" or \
                         self.purchase_choices[i] == "certified":

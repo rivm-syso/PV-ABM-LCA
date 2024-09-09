@@ -6,9 +6,14 @@ Created on Wed Nov 21 09:33 2019
 
 Model - agent-based simulations of the circular economy (ABSiCE)
 """
+# Configuration variable to choose the import
+USE = True  # Set to False to use climate change metamodel
 
+if USE:
+    from Metamodel_HDMR import Metamodel_HDMR as hdmr
+else:
+    from Metamodel_HDMR_CC import Metamodel_HDMR as hdmr
 from mesa import Model
-from Metamodel_HDMR import Metamodel_HDMR as hdmr
 from ABM_CE_PV_ConsumerAgents import Consumers
 from ABM_CE_PV_RecyclerAgents import Recyclers
 from ABM_CE_PV_RefurbisherAgents import Refurbishers
@@ -223,6 +228,8 @@ class ABM_CE_PV(Model):
                  num_refurbishers=15,
                  consumers_distribution={"residential": 1,
                                          "commercial": 0., "utility": 0.},
+                threshold_concern=0,
+                threshold_no_concern=0,
                 ## Modified the initial EoL rates, due to exclusion of pathways of repair and hoard
                  init_eol_rate={"repair": 0., "sell": 0.02,
                                    "recycle": 0.18, "landfill": 0.8,
@@ -347,6 +354,8 @@ class ABM_CE_PV(Model):
         """
         # Set up variables
         self.seed = seed
+        self.threshold_concern = threshold_concern
+        self.threshold_no_concern = threshold_no_concern    
         att_distrib_param_eol[0] = calibration_n_sensitivity
         att_distrib_param_reuse[0] = calibration_n_sensitivity_2
         #original_recycling_cost = [x * calibration_n_sensitivity_3 for x in
@@ -707,9 +716,11 @@ class ABM_CE_PV(Model):
         
     def impact_calculation (self):
         """
+        Calculate the impact of the model using the HDMR metamodel
         """
         (impact_count, (m1, m2)) = hdmr(self.x_hdmr)
-        return impact_count
+
+        return float(impact_count)
 
     def shortest_paths(self, target_states, distances_to_target):
         """

@@ -379,33 +379,19 @@ class Consumers(Agent):
                 max_cost = max(abs(i) for i in pbc_choice)
                 pbc_choice = [i / max_cost for i in pbc_choice]
         return [weight_pbc * -1 * max(i, 0) for i in pbc_choice]
-    
-    def mat_depl_effect(self):
-        """
-        Calculate the effect of material depletion on the pro-environmental
-        attitude level of agents.
-        """
-        if (self.model.impact_count) > self.model.threshold_concern:
-            mat_depl_effect = 0.5
-        elif (self.model.impact_count) < self.model.threshold_no_concern:
-            mat_depl_effect = -0.5
-        else:
-            mat_depl_effect = 0
-        return mat_depl_effect
 
     def tpb_attitude(self, decision, att_levels, att_level, weight_a):
         """
         Calculate pro-environmental attitude component of EoL TPB rule. Options
         considered pro environmental get a higher score than other options.
         """
-        mat_depl_effect = self.mat_depl_effect()
         for i in range(len(att_levels)):
             if decision == "EoL_pathway":
                 if list(self.model.all_EoL_pathways.keys())[i] == "repair" or \
                         list(self.model.all_EoL_pathways.keys())[i] == "sell" \
                         or list(self.model.all_EoL_pathways.keys())[i] == \
                         "recycle":
-                    mat_depl_mult = 1 + mat_depl_effect
+                    mat_depl_mult = 1 + self.model.mat_depl_effect()
                     att_levels[i] = min(att_level * mat_depl_mult, 1) ##max out att_level at 1
                 else:
                     att_levels[i] = 1 - min(att_level * mat_depl_mult, 1)
@@ -721,6 +707,9 @@ class Consumers(Agent):
             self.mass_per_function_model(last_capacity_new)
         self.used_products_mass += \
             self.mass_per_function_model(last_capacity_used)
+        
+    def get_tpb_attitude_eol(self):
+        return self.tpb_attitude("EoL_pathway", self.attitude_levels_pathways, self.attitude_level, self.w_a_eol)
 
     def step(self):
         """

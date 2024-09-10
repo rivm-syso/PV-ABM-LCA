@@ -30,7 +30,7 @@ def run_model(number_run, number_steps):
         t0 = time.time()
         if j < 2:
             model = ABM_CE_PV(
-                seed=0, threshold_concern=1.7e-5, threshold_no_concern=1.4e-5)
+                seed=1, threshold_concern=1.7e-5, threshold_no_concern=1.4e-5)
         elif j < 3:
             model = ABM_CE_PV(
                 seed=2, threshold_concern=3e-5, threshold_no_concern=1.4e-5)
@@ -40,62 +40,62 @@ def run_model(number_run, number_steps):
         elif j < 5:
             model = ABM_CE_PV(
                 seed=4, threshold_concern=3e-5, threshold_no_concern=1.4e-5)          
-        if j < 30:
-            model = ABM_CE_PV(
-                seed=j)
-        elif j < 60:
-            model = ABM_CE_PV(
-                seed=(j - 30), w_sn_eol=0)
-        elif j < 90:
-            model = ABM_CE_PV(
-                seed=(j - 60), seeding_recyc={"Seeding": True,
-                          "Year": 1, "number_seed": 100, "discount": 0.35})
-        elif j < 120:
-            model = ABM_CE_PV(seed=(j - 90), seeding_recyc={"Seeding": True,
-                          "Year": 1, "number_seed": 200, "discount": 0.35})
-        elif j < 150:
-            model = ABM_CE_PV(seed=(j - 120),
-                              calibration_n_sensitivity_4=2)
-        elif j < 180:
-            model = ABM_CE_PV(seed=(j - 150),
-                              recycling_learning_shape_factor=-0.6)
-        elif j < 210:
-            model = ABM_CE_PV(seed=(j - 180),
-                              recycling_learning_shape_factor=-1E-6)
-        elif j < 240:
-            model = ABM_CE_PV(seed=(j - 210),
-                              dynamic_lifetime_model={"Dynamic lifetime": True,
-                                                      "d_lifetime_intercept": 15.9,
-                                                      "d_lifetime_reg_coeff": 0.87,
-                                                      "Seed": False, "Year": 5,
-                                                      "avg_lifetime": 50})
-        elif j < 270:
-            model = ABM_CE_PV(seed=(j - 240),
-                              all_EoL_pathways={"repair": True, "sell": True,
-                                                "recycle": True,
-                                                "landfill": False,
-                                                "hoard": True})
-        elif j < 300:
-            model = ABM_CE_PV(seed=(j - 270),
-                              seeding={"Seeding": True,
-                                       "Year": 5, "number_seed": 50})
-        elif j < 330:
-            model = ABM_CE_PV(seed=(j - 300),
-                              repairability=1,
-                              init_purchase_choice={"new": 0, "used": 1,
-                                                    "certified": 0},
-                              w_sn_eol=0,
-                              w_pbc_eol=0.44,
-                              w_a_eol=0,
-                              w_sn_reuse=0.497,
-                              w_pbc_reuse=0.382,
-                              w_a_reuse=0,
-                              original_repairing_cost=[0.0001, 0.00045,
-                                                       0.00028],
-                              all_EoL_pathways={"repair": False, "sell": True,
-                                                "recycle": False,
-                                                "landfill": True,
-                                                "hoard": True})
+        # if j < 30:
+        #     model = ABM_CE_PV(
+        #         seed=j)
+        # elif j < 60:
+        #     model = ABM_CE_PV(
+        #         seed=(j - 30), w_sn_eol=0)
+        # elif j < 90:
+        #     model = ABM_CE_PV(
+        #         seed=(j - 60), seeding_recyc={"Seeding": True,
+        #                   "Year": 1, "number_seed": 100, "discount": 0.35})
+        # elif j < 120:
+        #     model = ABM_CE_PV(seed=(j - 90), seeding_recyc={"Seeding": True,
+        #                   "Year": 1, "number_seed": 200, "discount": 0.35})
+        # elif j < 150:
+        #     model = ABM_CE_PV(seed=(j - 120),
+        #                       calibration_n_sensitivity_4=2)
+        # elif j < 180:
+        #     model = ABM_CE_PV(seed=(j - 150),
+        #                       recycling_learning_shape_factor=-0.6)
+        # elif j < 210:
+        #     model = ABM_CE_PV(seed=(j - 180),
+        #                       recycling_learning_shape_factor=-1E-6)
+        # elif j < 240:
+        #     model = ABM_CE_PV(seed=(j - 210),
+        #                       dynamic_lifetime_model={"Dynamic lifetime": True,
+        #                                               "d_lifetime_intercept": 15.9,
+        #                                               "d_lifetime_reg_coeff": 0.87,
+        #                                               "Seed": False, "Year": 5,
+        #                                               "avg_lifetime": 50})
+        # elif j < 270:
+        #     model = ABM_CE_PV(seed=(j - 240),
+        #                       all_EoL_pathways={"repair": True, "sell": True,
+        #                                         "recycle": True,
+        #                                         "landfill": False,
+        #                                         "hoard": True})
+        # elif j < 300:
+        #     model = ABM_CE_PV(seed=(j - 270),
+        #                       seeding={"Seeding": True,
+        #                                "Year": 5, "number_seed": 50})
+        # elif j < 330:
+        #     model = ABM_CE_PV(seed=(j - 300),
+        #                       repairability=1,
+        #                       init_purchase_choice={"new": 0, "used": 1,
+        #                                             "certified": 0},
+        #                       w_sn_eol=0,
+        #                       w_pbc_eol=0.44,
+        #                       w_a_eol=0,
+        #                       w_sn_reuse=0.497,
+        #                       w_pbc_reuse=0.382,
+        #                       w_a_reuse=0,
+        #                       original_repairing_cost=[0.0001, 0.00045,
+        #                                                0.00028],
+        #                       all_EoL_pathways={"repair": False, "sell": True,
+        #                                         "recycle": False,
+        #                                         "landfill": True,
+        #                                         "hoard": True})
         else:
             model = ABM_CE_PV(seed=(j - 330),
                               calibration_n_sensitivity_3=0.65,

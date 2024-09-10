@@ -211,7 +211,9 @@ class ABM_CE_PV(Model):
     """
 
     def __init__(self,
-                 seed=None,
+                 seed,
+                 threshold_concern,
+                 threshold_no_concern,
                  calibration_n_sensitivity=1,
                  calibration_n_sensitivity_2=1,
                  calibration_n_sensitivity_3=1,
@@ -228,8 +230,6 @@ class ABM_CE_PV(Model):
                  num_refurbishers=15,
                  consumers_distribution={"residential": 1,
                                          "commercial": 0., "utility": 0.},
-                threshold_concern=0,
-                threshold_no_concern=0,
                 ## Modified the initial EoL rates, due to exclusion of pathways of repair and hoard
                  init_eol_rate={"repair": 0., "sell": 0.02,
                                    "recycle": 0.18, "landfill": 0.8,
@@ -566,6 +566,8 @@ class ABM_CE_PV(Model):
             self.report_output("weight"),
             "Impact count": lambda c:
             self.impact_count,   ###HERE added reporting of impact
+            "Effect": lambda c:
+            self.mat_depl_effect(), 
             "Agents repairing": lambda c: self.count_EoL("repairing"),
             "Agents selling": lambda c: self.count_EoL("selling"),
             "Agents recycling": lambda c: self.count_EoL("recycling"),
@@ -651,6 +653,10 @@ class ABM_CE_PV(Model):
                 lambda a: getattr(a, "number_product_landfilled", None),
             "Number_product_hoarded":
                 lambda a: getattr(a, "number_product_hoarded", None),
+            "Attitude level":
+                lambda a: getattr(a, "attitude_level", None),
+            "Attitude_eol": 
+                lambda a: a.get_tpb_attitude_eol() if isinstance(a, Consumers) else None,                           
             "Recycling":
                 lambda a: getattr(a, "EoL_pathway", None),
             "Landfilling costs":
@@ -721,6 +727,19 @@ class ABM_CE_PV(Model):
         (impact_count, (m1, m2)) = hdmr(self.x_hdmr)
 
         return float(impact_count)
+    
+    def mat_depl_effect(self):
+        """
+        Calculate the effect of material depletion on the pro-environmental
+        attitude level of agents.
+        """
+        if self.impact_count > self.threshold_concern:
+            mat_depl_effect = 0.5
+        elif self.impact_count < self.threshold_no_concern:
+            mat_depl_effect = -0.5
+        else:
+            mat_depl_effect = 0
+        return mat_depl_effect
 
     def shortest_paths(self, target_states, distances_to_target):
         """

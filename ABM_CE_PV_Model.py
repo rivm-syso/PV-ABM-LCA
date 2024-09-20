@@ -214,6 +214,8 @@ class ABM_CE_PV(Model):
                  seed,
                  threshold_concern,
                  threshold_no_concern,
+                 positive_feedback,
+                 negative_feedback,
                  calibration_n_sensitivity=1,
                  calibration_n_sensitivity_2=1,
                  calibration_n_sensitivity_3=1,
@@ -356,6 +358,8 @@ class ABM_CE_PV(Model):
         self.seed = seed
         self.threshold_concern = threshold_concern
         self.threshold_no_concern = threshold_no_concern    
+        self.positive_feedback = positive_feedback  
+        self.negative_feedback = negative_feedback
         att_distrib_param_eol[0] = calibration_n_sensitivity
         att_distrib_param_reuse[0] = calibration_n_sensitivity_2
         #original_recycling_cost = [x * calibration_n_sensitivity_3 for x in
@@ -734,9 +738,9 @@ class ABM_CE_PV(Model):
         attitude level of agents.
         """
         if self.impact_count > self.threshold_concern:
-            mat_depl_effect = 0.5
+            mat_depl_effect = self.positive_feedback
         elif self.impact_count < self.threshold_no_concern:
-            mat_depl_effect = -0.5
+            mat_depl_effect = self.negative_feedback
         else:
             mat_depl_effect = 0
         return mat_depl_effect

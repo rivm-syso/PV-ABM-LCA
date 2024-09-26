@@ -215,4 +215,4 @@ cython_debug/
 #*.csv
 
 #ouput figures
-figures/*
+results/*

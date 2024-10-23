@@ -24,7 +24,7 @@ from mesa.datacollection import DataCollector
 import networkx as nx
 import numpy as np
 from math import *
-import matplotlib.pyplot as plt
+from math_functions import *
 import pandas as pd
 import random
 
@@ -233,9 +233,8 @@ class ABM_CE_PV(Model):
                  consumers_distribution={"residential": 1,
                                          "commercial": 0., "utility": 0.},
                 ## Modified the initial EoL rates, due to exclusion of pathways of repair and hoard
-                 init_eol_rate={"repair": 0., "sell": 0.02,
-                                   "recycle": 0.18, "landfill": 0.8,
-                                   "hoard": 0.},
+                 init_eol_rate={"repair": 0.005, "sell": 0.02, "recycle": 0.1,
+                                "landfill": 0.4375, "hoard": 0.4375},
                  init_purchase_choice={"new": 0.9995, "used": 0.0005,
                                        "certified": 0},
                  total_number_product=[38, 38, 38, 38, 38, 38, 38, 139, 251,
@@ -380,7 +379,9 @@ class ABM_CE_PV(Model):
         self.prod_n_recyc_node_degree = prod_n_recyc_node_degree
         self.prod_n_recyc_network_type = prod_n_recyc_network_type
         self.num_refurbishers = num_refurbishers
-        self.init_eol_rate = init_eol_rate
+        ## Modified the initial EoL rates, due to exclusion of pathways of repair and hoard
+        new_init_eol_rate = self.eol_rate_update(init_eol_rate) 
+        self.init_eol_rate = new_init_eol_rate 
         self.init_purchase_choice = init_purchase_choice
         self.clock = 0
         self.total_number_product = total_number_product
@@ -592,7 +593,8 @@ class ABM_CE_PV(Model):
             self.report_output("prod_stock_used_mass"),
             "End-of-life - repaired": lambda c:
             self.report_output("product_repaired"),
-            "End-of-life - sold": lambda c: self.report_output("product_sold"),
+            "End-of-life - sold": lambda c: 
+            self.report_output("product_sold"),
             "End-of-life - recycled": lambda c:
             self.report_output("product_recycled"),
             "End-of-life - landfilled": lambda c:
@@ -692,37 +694,113 @@ class ABM_CE_PV(Model):
             model_reporters=ABM_CE_PV_model_reporters,
             agent_reporters=ABM_CE_PV_agent_reporters)
 
+    def eol_rate_update(self, init_eol_rate):
+        """
+        Compute new shares of EoL pathways
+        """
+        baseline = init_eol_rate
+        # Removing Repair and Storage by setting them to 0
+        updated_baseline = { "repair": 0,
+                            "sell": baseline["sell"],
+                            "recycle": baseline["recycle"], 
+                            "landfill": baseline["landfill"],
+                            "hoard": 0}
+        # Total percentage of Reuse, Recycle, and Landfill after removing Repair and Storage
+        remaining_percentage = updated_baseline["sell"] + updated_baseline["recycle"] + updated_baseline["landfill"]
+        # Normalize to keep proportions for Reuse, Recycle, and Landfill so they sum to 100%
+        reuse_share = (updated_baseline["sell"] / remaining_percentage) * 100
+        recycle_share = (updated_baseline["recycle"] / remaining_percentage) * 100
+        landfill_share = (updated_baseline["landfill"] / remaining_percentage) * 100
+        # Create the updated distribution
+        updated_distribution = {
+            "repair": 0,
+            "sell": reuse_share,
+            "recycle": recycle_share,
+            "landfill": landfill_share,
+            "hoard": 0}
+        return updated_distribution
+
     def init_hdmr(self):
         """
         Initialize the metamodel input.
         """
-        x_hdmr = [(3.5-0.5)/(3.5-0.5), (509-1)/(509-1), (0.28-0.25)/(0.31-0.25), (0.85-0.8)/(0.9-0.8), (0.3-0.2)/(0.7-0.3),
-                  (self.recovery_fractions["Copper"] - 0.5)/(0.99-0.5), (2.63-1.22)/(6.27-1.22), (10.08-4.6)/(23.2-4.6), 
-                  (4.71-2.11)/(9.64-2.11), (7.65-2.55)/(7.65-2.55), (self.product_lifetime-11.5)/(49.33-11.5), 
-                  (self.init_eol_rate["landfill"]/(self.init_eol_rate["recycle"] + self.init_eol_rate["landfill"]))/0.99,
-                  self.init_eol_rate["sell"]/0.99,
-                  (self.recovery_fractions["Aluminum"]-0.5)/(0.99-0.5), (self.recovery_fractions["Glass"]-0.5)/(0.99-0.5), 
-                  (self.recovery_fractions["Silicon"]-0.5)/(0.99-0.5), (self.recovery_fractions["Silver"]-0.5)/(0.99-0.5), 1, 1, 
-                  (110-49.26)/(236.71-49.26), (185-86.65)/(418.26-86.65), (85.26-40.27)/(185.52-40.27) , (1.07-0.49)/(2.37-0.49)]   
+        # Define min, max, and mode values for each fixed parameter
+        # The mode is the value used for calculation
+        params_fixed = {
+            'rt_movpe': (0.5, 3.5, 3.5),
+            'p_movpe_tool': (1, 509, 509),
+            'eff_pv': (0.25, 0.31, 0.28),
+            'pr_pv': (0.8, 0.9, 0.85),
+            'cu_zeol': (0.2, 0.7, 0.3),
+            'Al_panel': lognormal_stats(0.97, 0.199),
+            'glass_panel': lognormal_stats(2.31, 0.199),
+            'elec_panel': lognormal_stats(1.55, 0.199),
+            'zeol_scrub': (2.55, 7.65, 7.65),
+            'elec_siem': lognormal_stats(4.7, 0.199),
+            'heat_siem': lognormal_stats(5.22, 0.199),
+            'elec_cz': lognormal_stats(4.44, 0.199),
+            'scsi_cz': lognormal_stats(0.07, 0.199)
+        }
+        # Define min and max values for each linking parameter
+        params_linking = {
+            'lifetime': normal_stats(30, 5), 
+            #eol fractions
+            'landfill': (0, 0.99), 
+            'reuse': (0, 0.99),
+            #recovery fractions
+            'copper': (0.5, 0.99),
+            'aluminum': (0.5, 0.99),
+            'glass': (0.5, 0.99),
+            'silicon': (0.5, 0.99),
+            'silver': (0.5, 0.99),
+            'gallium': (0.5, 0.99),
+            'indium': (0.5, 0.99)
+        }
+
+        # Calculate normalized values
+        x_hdmr = [
+            normalize_value(params_fixed['rt_movpe'][2], params_fixed['rt_movpe'][0], params_fixed['rt_movpe'][1]),
+            normalize_value(params_fixed['p_movpe_tool'][2], params_fixed['p_movpe_tool'][0], params_fixed['p_movpe_tool'][1]),
+            normalize_value(params_fixed['eff_pv'][2], params_fixed['eff_pv'][0], params_fixed['eff_pv'][1]),
+            normalize_value(params_fixed['pr_pv'][2], params_fixed['pr_pv'][0], params_fixed['pr_pv'][1]),
+            normalize_value(params_fixed['cu_zeol'][2], params_fixed['cu_zeol'][0], params_fixed['cu_zeol'][1]),
+            normalize_value(self.recovery_fractions["Copper"], params_linking['copper'][0], params_linking['copper'][1]),
+            normalize_value(params_fixed['Al_panel'][2], params_fixed['Al_panel'][0], params_fixed['Al_panel'][1]),
+            normalize_value(params_fixed['glass_panel'][2], params_fixed['glass_panel'][0], params_fixed['glass_panel'][1]),
+            normalize_value(params_fixed['elec_panel'][2], params_fixed['elec_panel'][0], params_fixed['elec_panel'][1]),
+            normalize_value(params_fixed['zeol_scrub'][2], params_fixed['zeol_scrub'][0], params_fixed['zeol_scrub'][1]),
+            normalize_value(self.product_lifetime, params_linking['lifetime'][0], params_linking['lifetime'][1]),
+            normalize_value(self.init_eol_rate["landfill"], params_linking['landfill'][0], params_linking['landfill'][1]),
+            normalize_value(self.init_eol_rate["sell"], params_linking['reuse'][0], params_linking['reuse'][1]),
+            normalize_value(self.recovery_fractions["Aluminum"], params_linking['aluminum'][0], params_linking['aluminum'][1]),
+            normalize_value(self.recovery_fractions["Glass"], params_linking['glass'][0], params_linking['glass'][1]),
+            normalize_value(self.recovery_fractions["Silicon"], params_linking['silicon'][0], params_linking['silicon'][1]),
+            normalize_value(self.recovery_fractions["Silver"], params_linking['silver'][0], params_linking['silver'][1]),
+            normalize_value(0.99, params_linking['gallium'][0], params_linking['gallium'][1]),
+            normalize_value(0.99, params_linking['indium'][0], params_linking['indium'][1]),
+            normalize_value(params_fixed['elec_siem'][2], params_fixed['elec_siem'][0], params_fixed['elec_siem'][1]),
+            normalize_value(params_fixed['heat_siem'][2], params_fixed['heat_siem'][0], params_fixed['heat_siem'][1]),
+            normalize_value(params_fixed['elec_cz'][2], params_fixed['elec_cz'][0], params_fixed['elec_cz'][1]),
+            normalize_value(params_fixed['scsi_cz'][2], params_fixed['scsi_cz'][0], params_fixed['scsi_cz'][1])
+        ]
         return np.array(x_hdmr).reshape((23, 1))
 
     def update_metamodel_inputs(self):
         """
         Update metamodel inputs according to evolving EoL fractions
         """
-        product_recycled = self.report_output("product_new_recycled")+self.report_output("product_used_recycled")
-        product_landfilled = self.report_output("product_new_landfilled")+self.report_output("product_used_landfilled")
-        product_sold = self.report_output("product_new_sold")+self.report_output("product_used_sold")
+        x_hdmr = self.init_hdmr()
+        product_recycled = self.report_output("product_new_recycled") + self.report_output("product_used_recycled")
+        product_landfilled = self.report_output("product_new_landfilled") + self.report_output("product_used_landfilled")
+        product_sold = self.report_output("product_new_sold") + self.report_output("product_used_sold")
+        landfill_fraction = product_landfilled / (product_landfilled + product_recycled)
+        reuse_fraction = product_sold / (product_landfilled + product_recycled + product_sold)
 
-        x_hdmr = [(3.5-0.5)/(3.5-0.5), (509-1)/(509-1), (0.28-0.25)/(0.31-0.25), (0.85-0.8)/(0.9-0.8), (0.3-0.2)/(0.7-0.3),
-                  (self.recovery_fractions["Copper"] - 0.5)/(0.99-0.5), (2.63-1.22)/(6.27-1.22), (10.08-4.6)/(23.2-4.6), 
-                  (4.71-2.11)/(9.64-2.11), (7.65-2.55)/(7.65-2.55), (self.product_lifetime-11.5)/(49.33-11.5), 
-                  (product_landfilled/(product_landfilled + product_recycled))/0.99, 
-                  (product_sold/(product_landfilled + product_recycled+ product_sold))/0.99,
-                  (self.recovery_fractions["Aluminum"]-0.5)/(0.99-0.5), (self.recovery_fractions["Glass"]-0.5)/(0.99-0.5), 
-                  (self.recovery_fractions["Silicon"]-0.5)/(0.99-0.5), (self.recovery_fractions["Silver"]-0.5)/(0.99-0.5), 1, 1, 
-                  (110-49.26)/(236.71-49.26), (185-86.65)/(418.26-86.65), (85.26-40.27)/(185.52-40.27), (1.07-0.49)/(2.37-0.49)]
-        return np.array(x_hdmr).reshape((23, 1))  
+        # Update only the elements that change
+        x_hdmr[11] = landfill_fraction / 0.99  # Landfill_fraction
+        x_hdmr[12] = reuse_fraction / 0.99  # Reuse_fraction
+
+        return x_hdmr
         
     def impact_calculation (self):
         """

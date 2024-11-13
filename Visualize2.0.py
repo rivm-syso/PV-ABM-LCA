@@ -7,11 +7,14 @@ import matplotlib.pyplot as plt
 import ast
 import seaborn as sns
 import numpy as np
+import matplotlib.colors as mcolors
+import matplotlib.cm as cm
+import matplotlib.patches as patches
 
 ##CHANGE TRIGGERS HERE
-# USE = True  # Set to False to use climate change labels
-threshold_concern = None # Set the threshold of concern. Set to None if you don't want to use it.
-threshold_no_concern = None # Set the threshold of no concern. Set to None if you don't want to use it.
+# USE = False  # Set to False to use climate change labels
+threshold = "Concern" # Set the threshold to concern or indifference.
+step = 0.05 # Set the step for the threshold
 number_of_runs = 10 # Set the number of runs
 
 # Set the folder
@@ -22,7 +25,7 @@ else:
 
 # Set the style of seaborn
 sns.set_style("whitegrid")
-sns.set_color_codes(palette='deep')
+sns.set_color_codes(palette='dark')
 
 # Initialize an empty list to store dataframes
 dfs = []
@@ -30,10 +33,14 @@ dfs = []
 # Read the files
 # Loop through the number of runs
 for i in range(
-    4,8):
-    # number_of_runs):
+    # 3,5):
+    number_of_runs):
     # Construct the filename for each run
-    filename = f"results/{folder}/seed1-increaseT/Results_model_run{i}.csv"
+    
+ 
+    filename = f"results/{folder}/Results_model_run{i}.csv"   
+
+    # filename = f"results/{folder}/Figure_6/Results_model_run{i}.csv"
     
     # Read the CSV file
     df = pd.read_csv(filename)
@@ -41,135 +48,149 @@ for i in range(
     # Process the dataframe
     df['Agents recycling'] = df['Agents recycling'] / 10
     df['Agents selling'] = df['Agents selling'] / 10
+    df['Agents choosing circular pathways'] = df['Agents selling'] + df['Agents recycling']
     df['Agents landfilling'] = df['Agents landfilling'] / 10
     df['Yearly electricity production'] = df['Total product'] * 1.825 ## conversion from Wp to kWh/year considering 5 hours of peak sun per day
     df['Impact'] = df['Yearly electricity production'] * df['Impact count']
+    # Calculate the total end-of-life paths
+    total_end_of_life = df['End-of-life - sold'] + df['End-of-life - recycled'] + df['End-of-life - landfilled']
+
+    # Avoid division by zero by replacing zero totals with NaN
+    total_end_of_life = total_end_of_life.replace(0, float('nan'))
+
+    # Calculate the percentages
+    df['End-of-life - sold'] = 100 * df['End-of-life - sold'] / total_end_of_life
+    df['End-of-life - recycled'] = 100 * df['End-of-life - recycled'] / total_end_of_life
+    df['End-of-life - circular pathways'] = df['End-of-life - sold'] + df['End-of-life - recycled']
+    df['End-of-life - landfilled'] = 100 * df['End-of-life - landfilled'] / total_end_of_life
     # Calculate the cumulative impact over time
     df['Cumulative impact'] = df['Impact'].cumsum()
-    # Calculate the cumulative impact per year
-    # df['Cumulative impact'] = df.groupby('Year').apply(lambda x: (x['Total product'] * x['Impact count']).cumsum()).reset_index(level=0, drop=True)
-    
+    # Fill NaN values with 0
+    df = df.fillna(0)
     # Append the processed dataframe to the list
     dfs.append(df)
+
 
 # Optionally, concatenate all dataframes into a single dataframe
 all_data = pd.concat(dfs, ignore_index=True)
 
 # Create a figure with a custom layout
-fig = plt.figure(figsize=(16, 8))
-gs = GridSpec(2, 3, height_ratios=[1, 1])
+fig = plt.figure(figsize=(10, 6))
+gs = GridSpec(2, 2, height_ratios=[1, 1])
 
-# Create the three subplots on top
-ax1 = fig.add_subplot(gs[0, 0])
-ax2 = fig.add_subplot(gs[0, 1])
-ax3 = fig.add_subplot(gs[0, 2])
+# Create the subplots
+ax3 = fig.add_subplot(gs[0, 0])
+ax4 = fig.add_subplot(gs[0, 1])
+ax5 = fig.add_subplot(gs[1, 0])
+ax6 = fig.add_subplot(gs[1, 1])
 
-# Create the single subplot underneath
-ax4 = fig.add_subplot(gs[1, 0])
-ax5 = fig.add_subplot(gs[1, 1])
+#set dotted linestyle for run 0 and solid for the rest
 
-# Create an empty subplot for the legend in the third column of the second row
-ax_legend = fig.add_subplot(gs[1, 2])
-ax_legend.axis('off')  # Hide the axis
-
-# Plot the "Impact count" column on the first y-axis
-linestyles = ['-', '--', ':', '-.']
-for i, df in enumerate(dfs):
-    df['Impact count'].plot(kind='line', ax=ax4, color='b', linewidth=2.0, linestyle=linestyles[i % len(linestyles)], 
-                            label='Impact score')
-    df['Cumulative impact'].plot(kind='line', ax=ax5, color='black', linewidth=2.0, linestyle=linestyles[i % len(linestyles)],
-                            label='Cumulative impact')
-    # if i==6:
-    #     ax1.annotate(f'seed = {i}', xy=(df.index[-1], df['Impact count'].iloc[-1]), xytext=(-40, 5),
-    #          textcoords='offset points', ha='left', va='bottom', fontsize=8, color='black')
-# Add intercepts for thresholds
-if threshold_concern != None:
-    ax4.axhline(y=threshold_concern, color='black', linestyle='--', linewidth=1)
-if threshold_no_concern != None:
-    ax4.axhline(y=threshold_no_concern, color='black', linestyle='--', linewidth=1) #label='decreasing concern threshold = 0.75e-5')
-    ax4.annotate('decreasing pro-environmental attitude', xy=(0, threshold_no_concern), xytext=(-5, -10),
-                 textcoords='offset points', ha='left', va='top', fontsize=10, color='black', backgroundcolor='none')
-
-# Set labels for first y-axis
-ax4.set_xlabel('Time [years]', fontsize=14)
+blue=sns.color_palette("ch:s=.25,rot=-.25", as_cmap=True)
+# run = 0 in grey and for the rest divide the color palette in the number of runs-1
+linecolors = [blue(i / (number_of_runs - 2)) for i in range(number_of_runs-1)]
+linecolors.insert(0, 'grey')
+ 
 if USE:
-    ax4.set_ylabel('Resources, minerals and metals [kgSb-eq/kWh]', fontsize=14, color='black')
-    ax5.set_ylabel('Cumulative impact [kgSb-eq]', fontsize=14, color='black')   
-else:
-    ax4.set_ylabel('Climate change [kgCO2-eq/kWh]', fontsize=14, color='black')
-    ax5.set_ylabel('Cumulative impact [kgCO2-eq]', fontsize=14, color='black')
-ax4.tick_params(axis='y', labelcolor='black')
-# Plot the "Agents recycling" and "Agents selling" columns on the second subplot
+    for i, df in enumerate(dfs):
+        linestyles = ':' if i == 0 else '-'
+        df['Impact count'].plot(kind='line', ax=ax5, color=linecolors[i % len(linecolors)], linewidth=2.0, linestyle=linestyles[i % len(linestyles)], 
+                            label='Impact score [kgSb-eq/kWh]')
+        df['Cumulative impact'].plot(kind='line', ax=ax6, color=linecolors[i % len(linecolors)], linewidth=2.0, linestyle=linestyles[i % len(linestyles)],
+                            label='Cumulative impact [kgSb-eq]')
+else:   
+    for i, df in enumerate(dfs):
+        linestyles = ':' if i == 0 else '-'
+        df['Impact count'].plot(kind='line', ax=ax5, color=linecolors[i % len(linecolors)], linewidth=2.0, linestyle=linestyles[i % len(linestyles)], 
+                            label='Impact score [kgCO2-eq/kWh]')
+        df['Cumulative impact'].plot(kind='line', ax=ax6, color=linecolors[i % len(linecolors)], linewidth=2.0, linestyle=linestyles[i % len(linestyles)],
+                            label='Cumulative impact [kgCO2-eq]')
+
+# Plot the Agents  and EoL percentages        
 for i, df in enumerate(dfs):
-    df['Agents recycling'].plot(kind='line', ax=ax1, color='r', linewidth=2.0, linestyle=linestyles[i % len(linestyles)], 
-                                label='Agents recycling')
-    df['Agents selling'].plot(kind='line', ax=ax2, color='g', linewidth=2.0, linestyle=linestyles[i % len(linestyles)], 
-                              label='Agents selling')
-    df['Agents landfilling'].plot(kind='line', ax=ax3, color='y', linewidth=2.0, linestyle=linestyles[i % len(linestyles)],
-                                    label='Agents landfilling')  
+    linestyles = ':' if i == 0 else '-'
+    # df['Agents choosing circular pathways'].plot(kind='line', ax=ax1, color='g', linewidth=2.0, linestyle=linestyles[i % len(linestyles)], 
+    #                             label='circular pathways')
+    # df['Agents landfilling'].plot(kind='line', ax=ax2, color='y', linewidth=2.0, linestyle=linestyles[i % len(linestyles)],
+    #                                 label='landfilling')  
+    df['End-of-life - circular pathways'].plot(kind='line', ax=ax3, color=linecolors[i % len(linecolors)], linewidth=2.0, linestyle=linestyles[i % len(linestyles)],
+                                    label='circular pathways')
+    df['End-of-life - landfilled'].plot(kind='line', ax=ax4, color=linecolors[i % len(linecolors)], linewidth=2.0, linestyle=linestyles[i % len(linestyles)],
+                                    label='landfilling')
 
-# Set labels for second y-axis
-ax1.set_xlabel('Time [years]', fontsize=14)
-ax2.set_xlabel('Time [years]', fontsize=14)
-ax3.set_xlabel('Time [years]', fontsize=14)
+
+# Set labels for impact y-axis
+if USE:
+    ax5.set_ylabel('Mineral depletion [kgSb-eq/kWh]', fontsize=14, color='black')
+    ax6.set_ylabel('Mineral depletion [kgSb-eq]', fontsize=14, color='black')
+    ax5.set_title('Impact Score', fontsize=14)
+    ax6.set_title('Cumulative Impact', fontsize=14)
+else:
+    ax5.set_ylabel('Climate change [kgCO2-eq/kWh]', fontsize=14, color='black')
+    ax6.set_ylabel('Climate change [kgCO2-eq]', fontsize=14, color='black')
+    ax5.set_title('Impact Score', fontsize=14)
+    ax6.set_title('Cumulative Impact', fontsize=14)
+ax4.tick_params(axis='y', labelcolor='black')
+
+
+# Set labels for x-axis
+# ax4.set_xlabel('  ', fontsize=14)
 ax5.set_xlabel('Time [years]', fontsize=14)
-ax1.set_ylabel('Agents [%]', fontsize=14, color='black')
-# ax2.set_ylabel('Agents selling [%]', fontsize=14, color='black')
-# ax3.set_ylabel('Agents landfilling [%]', fontsize=14, color='black')
-ax2.tick_params(axis='y', labelcolor='black')
-ax1.set_ylim(0, 100)
-ax2.set_ylim(0, 100)
-ax3.set_ylim(0, 100)
+ax6.set_xlabel('Time [years]', fontsize=14)
 
-# Add legends to the first three plots with only the first item
-handles1, labels1 = ax1.get_legend_handles_labels()
-handles2, labels2 = ax2.get_legend_handles_labels()
-handles3, labels3 = ax3.get_legend_handles_labels()
+# Set labels for y-axis
+# ax1.set_ylabel('Agents [%]', fontsize=14, color='black')
+ax3.set_ylabel('EoL product [%]', fontsize=14, color='black')
+ax4.set_ylabel('EoL product [%]', fontsize=14, color='black')
 
-ax1.legend(handles=[handles1[0]], labels=[labels1[0]], loc='upper left', fontsize=10, frameon=False)
-ax2.legend(handles=[handles2[0]], labels=[labels2[0]], loc='upper left', fontsize=10, frameon=False)
-ax3.legend(handles=[handles3[0]], labels=[labels3[0]], loc='upper left', fontsize=10, frameon=False)
-
-
-# Create a single legend for the figure
-# fig.legend(handles=handles1 + handles2, labels=labels1 + labels2, loc='upper center', bbox_to_anchor=(0.5, 1), ncol=3, fontsize=12, frameon=False)
+# Set the y-axis limits
+ax3.set_ylim(-1, 102)
+ax4.set_ylim(-1, 102)
+# ax5.set_ylim(0.8e-5, 2.7e-5)
 
 # Remove grid
-ax1.grid(False)
-ax2.grid(False)
 ax3.grid(False)
 ax4.grid(False)
 ax5.grid(False)
+ax6.grid(False)
 
-custom_lines_1 = [
-                  Line2D([0], [0], color='black', linestyle='-', lw=2, label='Increased concern threshold = 1.3e-5'),
-                  Line2D([0], [0], color='black', linestyle='--', lw=2, label='Increased concern threshold = 1.1e-5'),
-                  Line2D([0], [0], color='black', linestyle=':', lw=2, label='Increased concern threshold = 0.9e-5'),
-                  Line2D([0], [0], color='black', linestyle='-.', lw=2, label='Increased concern threshold = 0.7e-5')
-                #   Line2D([0], [0], color='black', linestyle='-', lw=2, label='ICT = 0.37'),
-                #   Line2D([0], [0], color='black', linestyle='--', lw=2, label='ICT = 0.33'),
-                #   Line2D([0], [0], color='black', linestyle=':', lw=2, label='ICT = 0.29'),
-                #   Line2D([0], [0], color='black', linestyle='-.', lw=2, label='ICT = 0.25')
-                #   Line2D([0], [0], color='black', linestyle='-', lw=2, label='DCT = 0.9e-5'),
-                #   Line2D([0], [0], color='black', linestyle='--', lw=2, label='DCT = 1e-5'),
-                #   Line2D([0], [0], color='black', linestyle=':', lw=2, label='DCT = 1.1e-5'),
-                #   Line2D([0], [0], color='black', linestyle='-.', lw=2, label='DCT = 1.2e-5'),
-                #   Line2D([0], [0], color='black', linestyle='-', lw=2, label='seed = 0'),
-                #   Line2D([0], [0], color='black', linestyle='--', lw=2, label='seed = 1'),
-                #   Line2D([0], [0], color='black', linestyle=':', lw=2, label='seed = 2'),
-                #   Line2D([0], [0], color='black', linestyle='-.', lw=2, label='seed = 3'),
-                #   Line2D([0], [0], color='black', linestyle='-', lw=2, label='increase factor = 2'),
-                #   Line2D([0], [0], color='black', linestyle='--', lw=2, label='increase factor = 1.9'),
-                #   Line2D([0], [0], color='black', linestyle=':', lw=2, label='increase factor = 1.8'),
-                #   Line2D([0], [0], color='black', linestyle='-.', lw=2, label='increase factor = 1.7'),
-                # Line2D([0], [0], color='black', linestyle='-', lw=2, label='PEAM = 1'),
-                # Line2D([0], [0], color='black', linestyle='--', lw=2, label='PEAM = 0.8'),
-                # Line2D([0], [0], color='black', linestyle=':', lw=2, label='PEAM = 0.6'),
-                # Line2D([0], [0], color='black', linestyle='-.', lw=2, label='PEAM = 0.4'),
-                ] 
-# fig.legend(handles=custom_lines_1, loc='lower center', bbox_to_anchor=(0.5, 0), ncol=4, fontsize=12, frameon=False)    
-ax_legend.legend(handles=custom_lines_1, labelspacing=1.5, loc='center', fontsize=12, frameon=False)
+#Add title for the plots
+ax3.set_title('Circular Pathways', fontsize=14)
+ax4.set_title('Landfilling', fontsize=14)
+
+# Add grey line for linear coupling
+custom_lines_1 = [Line2D([0], [0], color='grey', linestyle=':', lw=2, label='Without concern threshold')]
+
+fig.legend(handles=custom_lines_1, loc='lower center', bbox_to_anchor=(0.5, 0), fontsize=12, frameon=False)   
+
+# Create a custom color bar with an arrow shape
+fig.subplots_adjust(right=0.85)
+cbar_ax = fig.add_axes([0.9, 0.15, 0.03, 0.8])  # [left, bottom, width, height]
+gradient = np.linspace(0, 1, 256).reshape(256, 1)
+cbar_ax.imshow(gradient, aspect='auto', cmap=blue)
+# cbar_ax.set_axis_off()
+
+# Set the ticks based on linecolors function
+cbar_ax.set_yticks(np.linspace(0, 255, (number_of_runs-1)))
+# Assuming dfs is a list of DataFrames
+max_impact_count_run_0 = dfs[0]['Impact count'].max()
+print(max_impact_count_run_0)
+cbar_ax.set_yticklabels([f'{max_impact_count_run_0 - (max_impact_count_run_0*(i+1)*0.05):.2e}' for i in range(number_of_runs-1)])
+cbar_ax.xaxis.set_visible(False)  # Remove the x-axis
+
+
+# # Add an arrow next to the color bar using annotate
+# fig.add_artist(patches.FancyArrowPatch((0.95, 0.2), (0.95, 0.8), transform=fig.transFigure,
+#                                        arrowstyle='<-', mutation_scale=20, color='black'))
+
+# Add a label to the color bar
+if USE:
+    fig.text(0.97, 0.5, f'{threshold} Threshold [kgSb-eq/kWh]', ha='center', va='center', fontsize=12, rotation=90, transform=fig.transFigure)
+else:
+    fig.text(0.97, 0.5, f'{threshold} Threshold [kgCO2-eq/kWh]', ha='center', va='center', fontsize=12, rotation=90, transform=fig.transFigure)
 
 # Show the plot
-plt.tight_layout()
-plt.show()
+plt.subplots_adjust(top=0.95, bottom=0.15, right=0.82, left=0.1, hspace=0.4, wspace=0.25)
+
+# Save the plot
+fig.savefig(f"results/{folder}/{threshold,number_of_runs,step}.png", dpi=300)

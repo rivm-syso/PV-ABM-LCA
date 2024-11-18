@@ -83,7 +83,7 @@ axes[0].plot([0, 1], [0, 1], color=color2, linestyle="--", linewidth=2, transfor
 axes[0].set_title("Resource depletion [kgSb-eq/kWh]", fontsize=16)
 axes[0].set_xlabel("LCA output", fontsize=14)
 axes[0].set_ylabel("Metamodel output", fontsize=14)
-axes[0].legend(title=f"R-squared = {R2_RD:.2f}")
+axes[0].legend(title=f"R-squared = {R2_RD:.2f}", frameon=False)
 
 # Plot LCA output vs metamodel predicted output for climate change
 axes[1].scatter(inputoutput_CC["LCA output"], inputoutput_CC["Metamodel predicted output"], color=color1, s=100, marker="o")
@@ -92,7 +92,8 @@ R2_CC = correlation_CC**2
 axes[1].plot([0, 1], [0, 1], color=color2, linestyle="--", linewidth=2, transform=axes[1].transAxes)
 axes[1].set_title("Climate change [kgCO2-eq/kWh]", fontsize=16)
 axes[1].set_xlabel("LCA output", fontsize=14)
-axes[1].legend(title=f"R-squared = {R2_CC:.2f}")
+axes[1].legend(title=f"R-squared = {R2_CC:.2f}", frameon=False)
+
 
 # Adjust layout
 plt.tight_layout()

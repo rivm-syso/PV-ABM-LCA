@@ -14,17 +14,35 @@ from SALib.analyze import sobol
 import time
 import pandas as pd
 
+### Set the parameters for the batch run
+step = 0.05 # Set the step for the threshold
+sample_size = 10 # Set the sample size
+
+# Set the folder
+if USE:
+    folder = "Resources"
+    max_impact_count_run_0 = 2.38e-5 # Set the maximum impact count for run 0
+    min_impact_count_run_0 = 1.07e-5 # Set the minimum impact count for run 0
+else:
+    folder = "ClimateChange"
+    max_impact_count_run_0 = 0.193
+    min_impact_count_run_0 = 0.133
+
+# create list for threshold of concern and indifference
+threshold_concern = [max_impact_count_run_0 - (max_impact_count_run_0*i*step) for i in range(sample_size)]
+threshold_indifference = [min_impact_count_run_0 + (min_impact_count_run_0*i*step) for i in range(sample_size)]
+
 # Batch run model
 if __name__ == '__main__':
     t0 = time.time()
 
     # Define the variable parameters for the batch run
     params = {
-        "seed": list(range(5)),
-        "threshold_concern": [0.3821, 0.35, 0.3],
-        "threshold_no_concern": [0],
-        "positive_feedback": [1, 0.5],
-        "negative_feedback": [0],
+        "seed": [1],
+        "threshold_concern": threshold_concern,
+        "threshold_no_concern": threshold_indifference,
+        "positive_feedback": [1],
+        "negative_feedback": [-0.5],
         "calibration_n_sensitivity": [0.544]
     }
 
@@ -42,7 +60,7 @@ if __name__ == '__main__':
     results_df = pd.DataFrame(results)
 
     # Save results
-    results_df.to_csv("results/batch_run_results.csv")
+    results_df.to_csv(f"results/{folder}/batch_run_results.csv")
 
     t1 = time.time()
     print(f"Batch run completed in {t1 - t0} seconds")

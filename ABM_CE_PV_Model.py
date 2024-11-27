@@ -10,7 +10,7 @@ Model - agent-based simulations of the circular economy (ABSiCE)
 USE = False  # Set to False to use climate change metamodel
 
 if USE:
-    from Metamodel_HDMR import Metamodel_HDMR as hdmr
+    from Metamodel_HDMR_R import Metamodel_HDMR as hdmr
 else:
     from Metamodel_HDMR_CC import Metamodel_HDMR as hdmr
 from mesa import Model

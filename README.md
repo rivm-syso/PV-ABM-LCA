@@ -21,8 +21,8 @@ The source code for the ERA model can be accessed at https://github.com/rivm-sys
    - Set step and sample_size:
       - step: Determines the %increment between consecutive values in the thresholds list.
       - sample_size: Specifies the number of values in the generated thresholds list.
-   - This choice will generate two lists for the concern/indifference thresholds with `length=sample_size` and `% increment from the max/min impact = step`
-   - The max and min impact are found by running the `ABM_CE_PV_MultipleRun.py` script with `concern_threshold = None` (high number)/0.
+   - This choice will generate two lists for the concern/indifference thresholds with `length=sample_size` and `% increment=step`
+   - The max impact is found by running the `ABM_CE_PV_MultipleRun.py` script without threshold and the min impact is found by running the script with `concern_threshold=0`.
    - **Thresholds**:
      - `threshold_indifference`: Defines the value below which impacts discourage recycling and selling (reuse).
      - `threshold_concern`: Defines the value above which impacts encourage recycling and selling (reuse).
@@ -72,13 +72,13 @@ Key tasks include:
 - **Purpose**: To adjust the pro-environmental attitude of agents based on the environmental impacts.
 - **How it Works**:
   - Checks the current impact count against the concern and no concern thresholds.
-  - Adjusts the pro-environmental attitude based on whether the impact count is above the concern threshold, below the indifference threshold, or in between.
-  - Returns the calculated effect on the pro-environmental attitude.
+  - Checks whether the impact count is above the concern threshold, below the indifference threshold, or in between to decide between a positive_feedback (default=1), negative_feedback(default=-0.5) or no feedback.
+  - Returns the calculated effect.
 
 ### 2. ABM_CE_PV_ConsumerAgents
 This script defines the rules at the agent level, which are applied to each agent at every timestep. The most important rule is the theory of planned behavior, based on which the agents make a choice about the end of life. A key function, tpb_attitude, has been modified to incorporate the impact_effect() function.
 ##### Function: `tpb_attitude()`
-- **Description**: Assigns an attitude level to each agent based on their decision-making process. Options considered pro-environmental get a higher score than other options by default. Then the attitude is modified by multiplying it with 1 + effect (calculated with impact_eff() function). 
+- **Description**: Assigns an attitude level to each agent based on their decision-making process. Options considered pro-environmental get a higher score than other options by default. Then the attitude is modified by multiplying it with `1+effect`. The effect is calculated with impact_eff() function. 
 - **Purpose**: To ensure that pro-environmental options are favored in the decision-making process.
 - **How it Works**:
   - Iterates through the attitude levels for each decision option

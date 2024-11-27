@@ -3,19 +3,40 @@
 PV-ABM-ERA is the pilot integration of two existing solar panel models (ABM and ERA).
 
 The source code for the ABM model can be accessed at https://github.com/NREL/ABSiCE.
+The source code for the ERA model can be accessed at https://github.com/rivm-syso/dynamic-era-energy.
 
 ## How to Run the Model
 
- 1. Create a new environment using the abm_mesa.yml file provided, using the command: conda env create -f environment.yml
- 2. Activate the environment 
- 3. Open ABM_CE_PV_Model and modify the trigger on line 10 to specify whether use the climate change or resource depletion metamodel.
- 4. Open batch_run and set the step and sample_size for the batch run. The choice will genereate two lists for the concern/indifference threshold threshold with lenght=sample_size and step between the values of 5% the max/min impact (found running the ABM_CE_PV_MultipleRun script with concern threshold = None(high number)/0). Threshold_no_concern defines the value below which impacts discourage recycling and selling(reuse). Threshold_concern defines the value above which impacts encourage recycling and selling(reuse).
- 5. The model produces one CSV file (model results and agent results). Open batch_visualize.ipynb, adapt the USE trigger and run the script to produce figures where .
+1. **Create a new environment**: Use the `abm_mesa.yml` file provided to create a new environment with the command:
+   ```sh
+   conda env create -f environment.yml
+   ```
+2. **Activate the environment**:
+   ```sh
+   conda activate <environment_name>
+   ```
+3. **Modify the metamodel trigger**: Open `ABM_CE_PV_Model.py` and modify the trigger on line 10 to specify whether to use the climate change or resource depletion metamodel.
+4. **Configure batch run parameters**:
+   - Open `batch_run.py` 
+   - Set step and sample_size:
+      - step: Determines the %increment between consecutive values in the thresholds list.
+      - sample_size: Specifies the number of values in the generated thresholds list.
+   - This choice will generate two lists for the concern/indifference thresholds with `length=sample_size` and `% increment from the max/min impact = step`
+   - The max and min impact are found by running the `ABM_CE_PV_MultipleRun.py` script with `concern_threshold = None` (high number)/0.
+   - **Thresholds**:
+     - `threshold_indifference`: Defines the value below which impacts discourage recycling and selling (reuse).
+     - `threshold_concern`: Defines the value above which impacts encourage recycling and selling (reuse).
+5. **Run the model**: The model produces one CSV file (model results and agent results). Open `batch_visualize.ipynb`, adapt the `USE` trigger, and run the script to produce figures where impacts are compared to the percentage of landfill and circular EoL pathways.
 
 ## Changes and General Description of Preexistent Scripts
 
 ### 1. ABM_CE_PV_Model
-This script defines the main rules of the model. Every time step, these functions are triggered. Here I import the metamodel, define the functions to initialize and calculate (t>0) the inputs for the metamodel, define and use the function to calculate impact. I also added a function to calculate the material depletion effect on the pro-environmental attitude level of agents.
+This script defines the primary rules and functions of the Agent-Based Model (ABM). At every timestep, these functions are executed to ensure the model operates as intended.
+Key tasks include:
+- Importing the metamodel.
+- Defining initialization and update functions for metamodel inputs.
+- Calculating environmental impacts.
+- Incorporating the effects of environmental impacts on agents’ pro-environmental attitudes.
 #### Key Additions
 ##### Function: `eol_rate_update()`
 - **Description**: This function updates the end-of-life (EoL) rates for products based exclusevely on the EoL pathways that were selected, i.e, reuse, recycle and landfill.
@@ -39,14 +60,34 @@ This script defines the main rules of the model. Every time step, these function
   - Collects data from consumer, recycler, and refurbisher agents.
   - Aggregates the collected data to form the inputs for the metamodel.
   - Updates the metamodel inputs with the aggregated data.
-- **Impact Calculation**: Defined and used a function to calculate the impact.
-- **Pro-Environmental Attitude**: Added a function to calculate the material depletion effect on the pro-environmental attitude level of agents.
+##### Function: `impact_calculation()`
+- **Description**: This function calculates the environmental impact based on the current state of the model. It uses the metamodel to estimate the impact of various actions and decisions made by the agents.
+- **Purpose**: To provide an accurate estimation of the environmental impact resulting from the agents' actions and decisions.
+- **How it Works**:
+  - Collects inputs for the metamodel.
+  - Uses the metamodel to estimate the impact based on the collected data
+  - Updates the model with the calculated impact values.
+##### Function: `impact_effect()`
+- **Description**: This function calculates the effect of environmental impacts on the pro-environmental attitude level of agents.
+- **Purpose**: To adjust the pro-environmental attitude of agents based on the environmental impacts.
+- **How it Works**:
+  - Checks the current impact count against the concern and no concern thresholds.
+  - Adjusts the pro-environmental attitude based on whether the impact count is above the concern threshold, below the indifference threshold, or in between.
+  - Returns the calculated effect on the pro-environmental attitude.
 
 ### 2. ABM_CE_PV_ConsumerAgents
-This script defines the rules at the agent level, which are applied to each agent at every timestep. The most important rule is the theory of planned behavior, based on which the agents make a choice about the end of life. Here I modified the function `tpb_attitude`, which assigns an attitude level to each agent, doubling the attitude when the impact is higher than a threshold of concern or halving the attitude when the impact is lower than a threshold of no concern.
+This script defines the rules at the agent level, which are applied to each agent at every timestep. The most important rule is the theory of planned behavior, based on which the agents make a choice about the end of life. A key function, tpb_attitude, has been modified to incorporate the impact_effect() function.
+##### Function: `tpb_attitude()`
+- **Description**: Assigns an attitude level to each agent based on their decision-making process. Options considered pro-environmental get a higher score than other options by default. Then the attitude is modified by multiplying it with 1 + effect (calculated with impact_eff() function). 
+- **Purpose**: To ensure that pro-environmental options are favored in the decision-making process.
+- **How it Works**:
+  - Iterates through the attitude levels for each decision option
+  - For EoL pathways, it adjusts the attitude level based on whether the option is considered pro-environmental (repair, sell, recycle) or not.
+  - For purchase choices, it adjusts the attitude level based on whether the option is considered pro-environmental (used, certified) or not.
+  - Returns the weighted attitude levels.
 
 ### 3. ABM_CE_PV_MultipleRun
-This script defines the number of runs and fixes variable parameters for each run. I used it to produce scenarios, a sort of local sensitivity analysis with different thresholds.
+This script defines the number of runs and fixes variable parameters for each run. It was used to find the values for max and min impact.
 
 ### 4. ABM_CE_PV_ProducerAgents, ABM_CE_PV_RecyclerAgents, ABM_CE_PV_RefurbisherAgents, and ABM_CE_PV_BatchRun
 These scripts define the behavior of different types of agents (producers, recyclers, refurbishers) and the batch run process. These scripts have not been modified.
@@ -60,9 +101,18 @@ This script runs multiple simulations in batch mode, allowing for the analysis o
 - `sample_size`: The number of values to test for each thresholds.
 - `max_impact_count_run_0`: The maximum impact count for run 0 (can be calculated using ABM_CE_PV_MultipleRun).
 - `min_impact_count_run_0`: The minimum impact count for run 0 (can be calculated using ABM_CE_PV_MultipleRun).
-- `folder`: The folder to save the results, determined by the `USE` variable.
 - `threshold_concern`: A list of concern thresholds for each run.
 - `threshold_indifference`: A list of indifference thresholds for each run.
+- `seed`: Specifies the random seed to ensure reproducibility in simulations.
+- `positive_feedback`: Value or list of values according to modeller's choice. Defines the adjustment factor applied when agents exceed the concern threshold, encouraging pro-environmental behavior. Default is 1 (100% increase of pro-environmental attitude level).
+- `negative_feedback`: Value or list of values according to modeller's choice. Defines the adjustment factor applied when agents fall below the indifference threshold, discouraging pro-environmental behavior. Default is -0.5(50% decrease of pro-environmental attitude level).
+- `calibration_n_sensitivity`: Value = 0.544. Represents the calibrated mean of agents' pro-environmental attitude level according to Walzberg et al., 2021. 
+#### How it Works
+1. **Set the Folder and Impact Counts**: Depending on the `USE` variable, set the folder and the maximum and minimum impact counts for run 
+2. **Create Lists for Thresholds**: Generate lists for the concern and indifference thresholds based on the step size and sample size.
+3. **Define Variable Parameters**: Define the variable parameters for the batch run. The seed, 
+4. **Run the Batch with a Progress Bar**: Execute the batch run using the batch_run function from the mesa library, with a progress bar to display the progress.
+5. **Save the Results**: Save the results of the batch run to a csv file.
 
 ### 2. batch_visualize
 This script visualizes the results of the batch runs, creating plots and charts to help analyze the outcomes of the simulations.
@@ -72,9 +122,7 @@ This script visualizes the metamodel results, providing insights into the behavi
 
 ### 4. math_functions
 This script, `math_functions.py`, contains a collection of mathematical functions for statistical calculations and normalization. The functions provided are useful for working with lognormal and normal distributions, as well as for normalizing values within a specified range.
-
 #### Functions
-
 - **lognormal_stats(mu, sigma)**
   - **Description**: Calculates the minimum, maximum, and mode values for a lognormal distribution given the mean (`mu`) and standard deviation (`sigma`) of the underlying normal distribution.
   - **Parameters**:
@@ -102,7 +150,7 @@ This script, `math_functions.py`, contains a collection of mathematical function
 This script implements the high-dimensional model representation (HDMR) for climate change (CC) analysis.
 
 ### 6. Metamodel_HDMR_RD
-This script implements the high-dimensional model representation (HDMR) for resource depletion (RD) analysis.
+This script implements the high-dimensional model representation (HDMR) for abiotic resource depletion (RD) analysis.
 
 ### 7. LegendreShiftPoly
 This script contains functions for working with Legendre shifted polynomials, which are used in the HDMR metamodel.

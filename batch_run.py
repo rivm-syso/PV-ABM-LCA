@@ -40,7 +40,7 @@ if __name__ == '__main__':
     params = {
         "seed": [1],
         "threshold_concern": threshold_concern,
-        "threshold_no_concern": threshold_indifference,
+        "threshold_indifference": threshold_indifference,
         "positive_feedback": [1],
         "negative_feedback": [-0.5],
         "calibration_n_sensitivity": [0.544]

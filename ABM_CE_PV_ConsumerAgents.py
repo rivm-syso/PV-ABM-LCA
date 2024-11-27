@@ -391,10 +391,10 @@ class Consumers(Agent):
                         list(self.model.all_EoL_pathways.keys())[i] == "sell" \
                         or list(self.model.all_EoL_pathways.keys())[i] == \
                         "recycle":
-                    mat_depl_mult = 1 + self.model.mat_depl_effect()
-                    att_levels[i] = min(att_level * mat_depl_mult, 1) ##max out att_level at 1
+                    impact_mult = 1 + self.model.impact_effect()
+                    att_levels[i] = min(att_level * impact_mult, 1) ##max out att_level at 1
                 else:
-                    att_levels[i] = 1 - min(att_level * mat_depl_mult, 1)
+                    att_levels[i] = 1 - min(att_level * impact_mult, 1)
             elif decision == "purchase_choice":
                 if self.purchase_choices[i] == "used" or \
                         self.purchase_choices[i] == "certified":

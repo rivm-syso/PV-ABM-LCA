@@ -213,7 +213,7 @@ class ABM_CE_PV(Model):
     def __init__(self,
                  seed,
                  threshold_concern,
-                 threshold_no_concern,
+                 threshold_indifference,
                  positive_feedback,
                  negative_feedback,
                  calibration_n_sensitivity=1,
@@ -356,7 +356,7 @@ class ABM_CE_PV(Model):
         # Set up variables
         self.seed = seed
         self.threshold_concern = threshold_concern
-        self.threshold_no_concern = threshold_no_concern    
+        self.threshold_indifference = threshold_indifference  
         self.positive_feedback = positive_feedback  
         self.negative_feedback = negative_feedback
         att_distrib_param_eol[0] = calibration_n_sensitivity
@@ -571,7 +571,7 @@ class ABM_CE_PV(Model):
             "Impact count": lambda c:
             self.impact_count,   ###HERE added reporting of impact
             "Effect": lambda c:
-            self.mat_depl_effect(), 
+            self.impact_effect(), 
             "Agents repairing": lambda c: self.count_EoL("repairing"),
             "Agents selling": lambda c: self.count_EoL("selling"),
             "Agents recycling": lambda c: self.count_EoL("recycling"),
@@ -813,18 +813,18 @@ class ABM_CE_PV(Model):
 
         return float(impact_count)
     
-    def mat_depl_effect(self):
+    def impact_effect(self):
         """
         Calculate the effect of material depletion on the pro-environmental
         attitude level of agents.
         """
         if self.impact_count > self.threshold_concern:
-            mat_depl_effect = self.positive_feedback
-        elif self.impact_count < self.threshold_no_concern:
-            mat_depl_effect = self.negative_feedback
+            impact_effect = self.positive_feedback
+        elif self.impact_count < self.threshold_indifference:
+            impact_effect = self.negative_feedback
         else:
-            mat_depl_effect = 0
-        return mat_depl_effect
+            impact_effect = 0
+        return impact_effect
 
     def shortest_paths(self, target_states, distances_to_target):
         """

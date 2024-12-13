@@ -216,3 +216,5 @@ cython_debug/
 
 #ouput figures
 results/*
+#archive
+Archive/*

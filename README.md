@@ -3,7 +3,7 @@
 PV-ABM-LCA is the pilot integration of two existing solar panel models (ABM and LCA).
 
 The source code for the ABM model can be accessed at [https://github.com/NREL/ABSiCE](https://github.com/NREL/ABSiCE).
-The LCA model code is not open source, but the metamodel and the stocastic inputs and outputs are available in the [metamodel folder](./Metamodel).
+The LCA model code is not open source, but the metamodel and the stocastic inputs and outputs are available in the [metamodel folder](./metamodel).
 
 ## How to Run the Model
 

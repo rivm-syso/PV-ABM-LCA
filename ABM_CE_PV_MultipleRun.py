@@ -12,8 +12,9 @@ from ABM_CE_PV_Model import *
 import matplotlib.pyplot as plt
 import time
 
-##CHANGE TRIGGER HERE
-USE = True  # Set to False to use climate change labels
+##CHANGE TRIGGERS HERE
+number_run = 1  # Set the number of runs
+# USE = False  # Set to False to use climate change labels
 if USE:
     folder = "Resources"
 else:
@@ -25,24 +26,23 @@ def run_model(number_run, number_steps):
     a new file for each run. Use a new seed for random generation at each
     run.
     """
-    for j in range(number_run):
+    for j in range(
+        # 10,15):
+        number_run):
         # Reinitialize model
         t0 = time.time()
-        if j < 2:
+
+        # if j < 20:
+            # model = ABM_CE_PV(
+                # seed=1, threshold_concern=0.3821-j*(0.38208*0.05), threshold_indifference=0, positive_feedback = 1, negative_feedback = 0, calibration_n_sensitivity =0.544)
+        if j < 20:
             model = ABM_CE_PV(
-                seed=1, threshold_concern=1.7e-5, threshold_no_concern=1.4e-5)
-        elif j < 3:
+                seed=1, threshold_concern=0, threshold_indifference=0, positive_feedback = 1, negative_feedback = -0.5, calibration_n_sensitivity =0.544)
+
+                # seed=1, threshold_concern=2.276e-5-j*(2.2756e-5*0.05), threshold_indifference=0, positive_feedback = 1, negative_feedback = -0.5, calibration_n_sensitivity =0.544)
+        else:
             model = ABM_CE_PV(
-                seed=2, threshold_concern=3e-5, threshold_no_concern=1.4e-5)
-        elif j < 4:
-            model = ABM_CE_PV(
-                seed=3,threshold_concern=3e-5, threshold_no_concern=1.4e-5)
-        elif j < 5:
-            model = ABM_CE_PV(
-                seed=4, threshold_concern=3e-5, threshold_no_concern=1.4e-5)          
-        # if j < 30:
-        #     model = ABM_CE_PV(
-        #         seed=j)
+                seed=1,threshold_concern=1.2e-5, threshold_indifference=(1e-5)+(j*1e-6), positive_feedback = 1, negative_feedback = -0.5, calibration_n_sensitivity =0.544)
         # elif j < 60:
         #     model = ABM_CE_PV(
         #         seed=(j - 30), w_sn_eol=0)
@@ -96,13 +96,13 @@ def run_model(number_run, number_steps):
         #                                         "recycle": False,
         #                                         "landfill": True,
         #                                         "hoard": True})
-        else:
-            model = ABM_CE_PV(seed=(j - 330),
-                              calibration_n_sensitivity_3=0.65,
-                              recovery_fractions={
-                "Product": np.nan, "Aluminum": 0.994, "Glass": 0.98,
-                "Copper": 0.97, "Insulated cable": 1., "Silicon": 0.97,
-                "Silver": 0.94})
+        # else:
+        #     model = ABM_CE_PV(seed=(j - 330),
+        #                       calibration_n_sensitivity_3=0.65,
+        #                       recovery_fractions={
+        #         "Product": np.nan, "Aluminum": 0.994, "Glass": 0.98,
+        #         "Copper": 0.97, "Insulated cable": 1., "Silicon": 0.97,
+        #         "Silver": 0.94})
         for i in range(number_steps):
             model.step()
         # Get results in a pandas DataFrame
@@ -158,7 +158,7 @@ def draw_graphs(network, figures, model, results_agents, results_model):
 #        plt.show()  # draw graph as desired and plot outputs
 
 ### Run the model, change number of runs and steps as desired
-run_model(1, 30)
+run_model(number_run, 30)
 
 ## Profiling
 # cProfile.run('run_model(1, 30)', 'run_model.profile')

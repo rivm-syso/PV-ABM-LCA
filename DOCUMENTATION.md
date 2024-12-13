@@ -86,10 +86,7 @@ This script runs multiple simulations in batch mode, allowing for the analysis o
 ### 2. batch_visualize
 This script visualizes the results of the batch runs, creating plots and charts to help analyze the outcomes of the simulations.
 
-### 3. visualize_metamodel
-This script visualizes the metamodel results, providing insights into the behavior and performance of the metamodel.
-
-### 4. math_functions
+### 3. math_functions
 This script, `math_functions.py`, contains a collection of mathematical functions for statistical calculations and normalization. The functions provided are useful for working with lognormal and normal distributions, as well as for normalizing values within a specified range.
 #### Functions
 - **lognormal_stats(mu, sigma)**
@@ -115,14 +112,19 @@ This script, `math_functions.py`, contains a collection of mathematical function
   - **Returns**: The normalized value.
   - **Raises**: `ValueError` if `min_value` and `max_value` are the same.
 
-### 5. Metamodel_HDMR_CC
+### 4. Scripts in metamodel folder
+
+#### 4.1 visualize_metamodel
+This script visualizes the metamodel results, providing insights into the behavior and performance of the metamodel.
+
+#### 4.2 Metamodel_HDMR_CC
 This script implements the high-dimensional model representation (HDMR) for climate change (CC) analysis.
 
-### 6. Metamodel_HDMR_RD
+#### 4.3 Metamodel_HDMR_RD
 This script implements the high-dimensional model representation (HDMR) for abiotic resource depletion (RD) analysis.
 
-### 7. LegendreShiftPoly
+#### 4.4 LegendreShiftPoly
 This script contains functions for working with Legendre shifted polynomials, which are used in the HDMR metamodel.
 
-### 8. LCA_output
+#### 4.5. LCA_output
 This script processes the life cycle assessment (LCA) output data for use in the metamodel.

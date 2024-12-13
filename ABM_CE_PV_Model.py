@@ -10,9 +10,9 @@ Model - agent-based simulations of the circular economy (ABSiCE)
 USE = False  # Set to False to use climate change metamodel
 
 if USE:
-    from Metamodel_HDMR_R import Metamodel_HDMR as hdmr
+    from metamodel.Metamodel_HDMR_R import Metamodel_HDMR as hdmr
 else:
-    from Metamodel_HDMR_CC import Metamodel_HDMR as hdmr
+    from metamodel.Metamodel_HDMR_CC import Metamodel_HDMR as hdmr
 from mesa import Model
 from ABM_CE_PV_ConsumerAgents import Consumers
 from ABM_CE_PV_RecyclerAgents import Recyclers
@@ -217,10 +217,10 @@ class ABM_CE_PV(Model):
                  positive_feedback,
                  negative_feedback,
                  calibration_n_sensitivity=1,
-                 calibration_n_sensitivity_2=1,
-                 calibration_n_sensitivity_3=1,
-                 calibration_n_sensitivity_4=1,
-                 calibration_n_sensitivity_5=1,
+                #  calibration_n_sensitivity_2=1,
+                #  calibration_n_sensitivity_3=1,
+                #  calibration_n_sensitivity_4=1,
+                #  calibration_n_sensitivity_5=1,
                  num_consumers=1000,
                  consumers_node_degree=10,
                  consumers_network_type="small-world",
@@ -258,7 +258,7 @@ class ABM_CE_PV(Model):
                  theory_of_planned_behavior={
                      "residential": True, "commercial": True, "utility": True},
                  w_sn_eol=0.27,
-                 w_pbc_eol=0.44,
+                 w_pbc_eol=0.33,
                  w_a_eol=0.39,
                  w_sn_reuse=0.497,
                  w_pbc_reuse=0.382,
@@ -360,7 +360,7 @@ class ABM_CE_PV(Model):
         self.positive_feedback = positive_feedback  
         self.negative_feedback = negative_feedback
         att_distrib_param_eol[0] = calibration_n_sensitivity
-        att_distrib_param_reuse[0] = calibration_n_sensitivity_2
+        # att_distrib_param_reuse[0] = calibration_n_sensitivity_2
         #original_recycling_cost = [x * calibration_n_sensitivity_3 for x in
          #                          original_recycling_cost]
         #landfill_cost = [x * calibration_n_sensitivity_4 for x in
@@ -658,11 +658,11 @@ class ABM_CE_PV(Model):
                 lambda a: getattr(a, "number_product_landfilled", None),
             "Number_product_hoarded":
                 lambda a: getattr(a, "number_product_hoarded", None),
-            "Attitude level":
+            "Attitude before feedback":
                 lambda a: getattr(a, "attitude_level", None),
-            "Attitude_eol": 
+            "Attitude after feedback": 
                 lambda a: a.get_tpb_attitude_eol() if isinstance(a, Consumers) else None,                           
-            "Recycling":
+            "EoL pathway":
                 lambda a: getattr(a, "EoL_pathway", None),
             "Landfilling costs":
                 lambda a: getattr(a, "landfill_cost", None),

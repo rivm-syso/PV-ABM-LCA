@@ -5,6 +5,7 @@ Created on Wed Nov 21 12:43 2019
 @author Julien Walzberg - Julien.Walzberg@nrel.gov
 
 Run - one or several simulations with all states of outputs
+############ Changes made to the original model in December 2024 ############
 """
 # import cProfile
 # import pstats

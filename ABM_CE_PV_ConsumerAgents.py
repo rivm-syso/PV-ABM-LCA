@@ -5,6 +5,7 @@ Created on Wed Nov 20 12:40 2019
 @author Julien Walzberg - Julien.Walzberg@nrel.gov
 
 Agent - Consumer
+############ Changes made to the original model in December 2024 ############
 """
 
 from mesa import Agent

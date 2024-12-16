@@ -22,64 +22,33 @@ else:
     max_impact_count_run_0 = 0.193
     min_impact_count_run_0 = 0.13
 
-########################################################## Fixed seed and combined concern and indifference threshold #####################################################
+# Set the use case
+Seed = True # Set the seed. If True, the seed is fixed. If False, the 100 seeds are used.
 
-# ### Set the parameters for the batch run
-# step = 0.05 # Set the step for the threshold
-# sample_size = 10 # Set the sample size for the threshold
+if Seed: 
+    step = 0.05 # Set the step for the threshold
+    sample_size = 10 # Set the sample size for the threshold
+    threshold_concern = [max_impact_count_run_0 - (max_impact_count_run_0*i*step) for i in range(sample_size)]
+    threshold_indifference = [min_impact_count_run_0 + (min_impact_count_run_0*i*step) for i in range(sample_size)]
+    seed = 1
+    name = 'batch_fixed_seed'
+else:
+    step = 0.05 # Set the step for the threshold
+    n=9
+    threshold_concern = [max_impact_count_run_0 - (step*n*max_impact_count_run_0)]
+    threshold_indifference = [0]
+    seed = range(100)
+    name = f'batch_seed_results{n}'
 
-# # create list for threshold of concern and indifference
-# threshold_concern = [max_impact_count_run_0 - (max_impact_count_run_0*i*step) for i in range(sample_size)]
-# threshold_indifference = [min_impact_count_run_0 + (min_impact_count_run_0*i*step) for i in range(sample_size)]
-
-# # Batch run model 
-# if __name__ == '__main__':
-#     t0 = time.time()
-
-#     # Define the variable parameters for the batch run
-#     params = {
-#         "seed": [1],
-#         "threshold_concern": threshold_concern,
-#         "threshold_indifference": threshold_indifference,
-#         "positive_feedback": [1],
-#         "negative_feedback": [-0.5],
-#         "calibration_n_sensitivity": [0.544]
-#     }
-
-#     # Run the batch with a progress bar
-#     results = batch_run(
-#         ABM_CE_PV,
-#         parameters=params,
-#             iterations=1,
-#             max_steps=30,
-#             number_processes=None,
-#             data_collection_period=1,
-#             display_progress=True
-#     )
-
-#     results_df = pd.DataFrame(results)
-
-#     # Save results
-#     results_df.to_csv(f"results/{folder}/batch_run_results.csv")
-
-#     t1 = time.time()
-#     print(f"Batch run completed in {t1 - t0} seconds")
-
-########################################################## Fixed threshold and 100 seeds #####################################################
-
-### Set the parameters for the batch run
-step = 0.05 # Set the step for the threshold
-n=9 # Set for run with one threshold and different seeds
-
-# Batch run model
+# Batch run model 
 if __name__ == '__main__':
     t0 = time.time()
 
     # Define the variable parameters for the batch run
     params = {
-        "seed": range(100),
-        "threshold_concern": [max_impact_count_run_0 - (step*n*max_impact_count_run_0)],
-        "threshold_indifference": [0],
+        "seed": seed,
+        "threshold_concern": threshold_concern,
+        "threshold_indifference": threshold_indifference,
         "positive_feedback": [1],
         "negative_feedback": [-0.5],
         "calibration_n_sensitivity": [0.544]
@@ -99,7 +68,7 @@ if __name__ == '__main__':
     results_df = pd.DataFrame(results)
 
     # Save results
-    results_df.to_csv(f"results/{folder}/batch_seed_results{n}.csv")
+    results_df.to_csv(f"results/{folder}/{name}.csv")
 
     t1 = time.time()
     print(f"Batch run completed in {t1 - t0} seconds")

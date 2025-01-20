@@ -1,16 +1,8 @@
-# -*- coding:utf-8 -*-
-"""
-Created on Wed Nov 21 12:43 2019
-
-Author: Julien Walzberg - Julien.Walzberg@nrel.gov
-
-Run - batch of simulations with final state of outputs
-"""
-
 from ABM_CE_PV_Model import *
 from mesa.batchrunner import batch_run
 import time
 import pandas as pd
+import os
 
 # Set the folder
 if USE:
@@ -44,6 +36,11 @@ else:
 if __name__ == '__main__':
     t0 = time.time()
 
+    # Ensure the output directory exists
+    output_dir = f"results/{folder}"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
     # Define the variable parameters for the batch run
     params = {
         "seed": seed,
@@ -68,7 +65,7 @@ if __name__ == '__main__':
     results_df = pd.DataFrame(results)
 
     # Save results
-    results_df.to_csv(f"results/{folder}/{name}.csv")
+    results_df.to_csv(f"{output_dir}/{name}.csv")
 
     t1 = time.time()
     print(f"Batch run completed in {t1 - t0} seconds")

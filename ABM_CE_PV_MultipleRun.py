@@ -3,15 +3,15 @@
 Created on Wed Nov 21 12:43 2019
 
 @author Julien Walzberg - Julien.Walzberg@nrel.gov
+Modified December 2024 by Agnese Fuortes
 
 Run - one or several simulations with all states of outputs
-############ Changes made to the original model in December 2024 ############
+
 """
-# import cProfile
-# import pstats
 from ABM_CE_PV_Model import *
 import matplotlib.pyplot as plt
 import time
+import os
 
 ##CHANGE TRIGGERS HERE
 number_run = 1  # Set the number of runs
@@ -20,6 +20,11 @@ if USE:
     folder = "Resources"
 else:
     folder = "ClimateChange"
+
+# Ensure the output directory exists
+output_dir = f"results/{folder}"
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
 
 def run_model(number_run, number_steps):
     """
@@ -44,73 +49,14 @@ def run_model(number_run, number_steps):
         else:
             model = ABM_CE_PV(
                 seed=1,threshold_concern=1.2e-5, threshold_indifference=(1e-5)+(j*1e-6), positive_feedback = 1, negative_feedback = -0.5, calibration_n_sensitivity =0.544)
-        # elif j < 60:
-        #     model = ABM_CE_PV(
-        #         seed=(j - 30), w_sn_eol=0)
-        # elif j < 90:
-        #     model = ABM_CE_PV(
-        #         seed=(j - 60), seeding_recyc={"Seeding": True,
-        #                   "Year": 1, "number_seed": 100, "discount": 0.35})
-        # elif j < 120:
-        #     model = ABM_CE_PV(seed=(j - 90), seeding_recyc={"Seeding": True,
-        #                   "Year": 1, "number_seed": 200, "discount": 0.35})
-        # elif j < 150:
-        #     model = ABM_CE_PV(seed=(j - 120),
-        #                       calibration_n_sensitivity_4=2)
-        # elif j < 180:
-        #     model = ABM_CE_PV(seed=(j - 150),
-        #                       recycling_learning_shape_factor=-0.6)
-        # elif j < 210:
-        #     model = ABM_CE_PV(seed=(j - 180),
-        #                       recycling_learning_shape_factor=-1E-6)
-        # elif j < 240:
-        #     model = ABM_CE_PV(seed=(j - 210),
-        #                       dynamic_lifetime_model={"Dynamic lifetime": True,
-        #                                               "d_lifetime_intercept": 15.9,
-        #                                               "d_lifetime_reg_coeff": 0.87,
-        #                                               "Seed": False, "Year": 5,
-        #                                               "avg_lifetime": 50})
-        # elif j < 270:
-        #     model = ABM_CE_PV(seed=(j - 240),
-        #                       all_EoL_pathways={"repair": True, "sell": True,
-        #                                         "recycle": True,
-        #                                         "landfill": False,
-        #                                         "hoard": True})
-        # elif j < 300:
-        #     model = ABM_CE_PV(seed=(j - 270),
-        #                       seeding={"Seeding": True,
-        #                                "Year": 5, "number_seed": 50})
-        # elif j < 330:
-        #     model = ABM_CE_PV(seed=(j - 300),
-        #                       repairability=1,
-        #                       init_purchase_choice={"new": 0, "used": 1,
-        #                                             "certified": 0},
-        #                       w_sn_eol=0,
-        #                       w_pbc_eol=0.44,
-        #                       w_a_eol=0,
-        #                       w_sn_reuse=0.497,
-        #                       w_pbc_reuse=0.382,
-        #                       w_a_reuse=0,
-        #                       original_repairing_cost=[0.0001, 0.00045,
-        #                                                0.00028],
-        #                       all_EoL_pathways={"repair": False, "sell": True,
-        #                                         "recycle": False,
-        #                                         "landfill": True,
-        #                                         "hoard": True})
-        # else:
-        #     model = ABM_CE_PV(seed=(j - 330),
-        #                       calibration_n_sensitivity_3=0.65,
-        #                       recovery_fractions={
-        #         "Product": np.nan, "Aluminum": 0.994, "Glass": 0.98,
-        #         "Copper": 0.97, "Insulated cable": 1., "Silicon": 0.97,
-        #         "Silver": 0.94})
+        # Run model
         for i in range(number_steps):
             model.step()
         # Get results in a pandas DataFrame
         results_model = model.datacollector.get_model_vars_dataframe()
         results_agents = model.datacollector.get_agent_vars_dataframe()
-        results_model.to_csv(f"results/{folder}/Results_model_run{j}.csv")
-        results_agents.to_csv(f"results/{folder}/Results_agents.csv")
+        results_model.to_csv(f"{output_dir}/Results_model_run{j}.csv")
+        results_agents.to_csv(f"{output_dir}/Results_agents.csv")
         # Draw figures
         draw_graphs(False, True, model, results_agents, results_model)
         print("Run", j+1, "out of", number_run)
@@ -160,9 +106,3 @@ def draw_graphs(network, figures, model, results_agents, results_model):
 
 ### Run the model, change number of runs and steps as desired
 run_model(number_run, 30)
-
-## Profiling
-# cProfile.run('run_model(1, 30)', 'run_model.profile')
-
-# p = pstats.Stats('run_model.profile')
-# p.sort_stats('cumulative').print_stats(10)  # Print the 10 most time-consuming functions

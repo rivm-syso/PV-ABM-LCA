@@ -3,9 +3,10 @@
 Created on Wed Nov 21 09:33 2019
 
 @author Julien Walzberg - Julien.Walzberg@nrel.gov
+Modified December 2024 by Agnese Fuortes
 
 Model - agent-based simulations of the circular economy (ABSiCE)
-############ Changes made to the original model in December 2024 ############
+
 """
 # Configuration variable to choose the import
 USE = False  # Set to False to use climate change metamodel

@@ -1,4 +1,5 @@
-## Changes and General Description of Preexistent Scripts
+## General Description of Preexistent Scripts
+Below the implementation of changes and coupling of LCA and ABM are described based on Fuortes et al. (2025).
 
 ### 1. ABM_CE_PV_Model
 This script defines the primary rules and functions of the Agent-Based Model (ABM). At every timestep, these functions are executed to ensure the model operates as intended.

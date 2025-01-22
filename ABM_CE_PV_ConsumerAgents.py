@@ -2,7 +2,7 @@
 """
 Created on Wed Nov 20 12:40 2019
 @author Julien Walzberg - Julien.Walzberg@nrel.gov
-Modified December 2024 by Agnese Fuortes
+
 Modified December 2024 by Agnese Fuortes
 
 Agent - Consumer

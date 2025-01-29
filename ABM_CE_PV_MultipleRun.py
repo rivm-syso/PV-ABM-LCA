@@ -3,14 +3,28 @@
 Created on Wed Nov 21 12:43 2019
 
 @author Julien Walzberg - Julien.Walzberg@nrel.gov
+Modified December 2024 by Agnese Fuortes
 
 Run - one or several simulations with all states of outputs
-"""
 
+"""
 from ABM_CE_PV_Model import *
 import matplotlib.pyplot as plt
 import time
+import os
 
+##CHANGE TRIGGERS HERE
+number_run = 1  # Set the number of runs
+# USE = False  # Set to False to use climate change labels
+if USE:
+    folder = "Resources"
+else:
+    folder = "ClimateChange"
+
+# Ensure the output directory exists
+output_dir = f"results/{folder}"
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
 
 def run_model(number_run, number_steps):
     """
@@ -18,79 +32,31 @@ def run_model(number_run, number_steps):
     a new file for each run. Use a new seed for random generation at each
     run.
     """
-    for j in range(number_run):
+    for j in range(
+        # 10,15):
+        number_run):
         # Reinitialize model
         t0 = time.time()
-        if j < 30:
+
+        # if j < 20:
+            # model = ABM_CE_PV(
+                # seed=1, threshold_concern=0.3821-j*(0.38208*0.05), threshold_indifference=0, positive_feedback = 1, negative_feedback = 0, calibration_n_sensitivity =0.544)
+        if j < 20:
             model = ABM_CE_PV(
-                seed=j)
-        elif j < 60:
-            model = ABM_CE_PV(
-                seed=(j - 30), w_sn_eol=0)
-        elif j < 90:
-            model = ABM_CE_PV(
-                seed=(j - 60), seeding_recyc={"Seeding": True,
-                          "Year": 1, "number_seed": 100, "discount": 0.35})
-        elif j < 120:
-            model = ABM_CE_PV(seed=(j - 90), seeding_recyc={"Seeding": True,
-                          "Year": 1, "number_seed": 200, "discount": 0.35})
-        elif j < 150:
-            model = ABM_CE_PV(seed=(j - 120),
-                              calibration_n_sensitivity_4=2)
-        elif j < 180:
-            model = ABM_CE_PV(seed=(j - 150),
-                              recycling_learning_shape_factor=-0.6)
-        elif j < 210:
-            model = ABM_CE_PV(seed=(j - 180),
-                              recycling_learning_shape_factor=-1E-6)
-        elif j < 240:
-            model = ABM_CE_PV(seed=(j - 210),
-                              dynamic_lifetime_model={"Dynamic lifetime": True,
-                                                      "d_lifetime_intercept": 15.9,
-                                                      "d_lifetime_reg_coeff": 0.87,
-                                                      "Seed": False, "Year": 5,
-                                                      "avg_lifetime": 50})
-        elif j < 270:
-            model = ABM_CE_PV(seed=(j - 240),
-                              all_EoL_pathways={"repair": True, "sell": True,
-                                                "recycle": True,
-                                                "landfill": False,
-                                                "hoard": True})
-        elif j < 300:
-            model = ABM_CE_PV(seed=(j - 270),
-                              seeding={"Seeding": True,
-                                       "Year": 5, "number_seed": 50})
-        elif j < 330:
-            model = ABM_CE_PV(seed=(j - 300),
-                              repairability=1,
-                              init_purchase_choice={"new": 0, "used": 1,
-                                                    "certified": 0},
-                              w_sn_eol=0,
-                              w_pbc_eol=0.44,
-                              w_a_eol=0,
-                              w_sn_reuse=0.497,
-                              w_pbc_reuse=0.382,
-                              w_a_reuse=0,
-                              original_repairing_cost=[0.0001, 0.00045,
-                                                       0.00028],
-                              all_EoL_pathways={"repair": False, "sell": True,
-                                                "recycle": False,
-                                                "landfill": True,
-                                                "hoard": True})
+                seed=1, threshold_concern=0, threshold_indifference=0, positive_feedback = 1, negative_feedback = -0.5, calibration_n_sensitivity =0.544)
+
+                # seed=1, threshold_concern=2.276e-5-j*(2.2756e-5*0.05), threshold_indifference=0, positive_feedback = 1, negative_feedback = -0.5, calibration_n_sensitivity =0.544)
         else:
-            model = ABM_CE_PV(seed=(j - 330),
-                              calibration_n_sensitivity_3=0.65,
-                              recovery_fractions={
-                "Product": np.nan, "Aluminum": 0.994, "Glass": 0.98,
-                "Copper": 0.97, "Insulated cable": 1., "Silicon": 0.97,
-                "Silver": 0.94})
+            model = ABM_CE_PV(
+                seed=1,threshold_concern=1.2e-5, threshold_indifference=(1e-5)+(j*1e-6), positive_feedback = 1, negative_feedback = -0.5, calibration_n_sensitivity =0.544)
+        # Run model
         for i in range(number_steps):
             model.step()
         # Get results in a pandas DataFrame
         results_model = model.datacollector.get_model_vars_dataframe()
         results_agents = model.datacollector.get_agent_vars_dataframe()
-        results_model.to_csv("results\\Results_model_run%s.csv" % j)
-        results_agents.to_csv("results\\Results_agents.csv")
+        results_model.to_csv(f"{output_dir}/Results_model_run{j}.csv")
+        results_agents.to_csv(f"{output_dir}/Results_agents.csv")
         # Draw figures
         draw_graphs(False, True, model, results_agents, results_model)
         print("Run", j+1, "out of", number_run)
@@ -119,10 +85,11 @@ def draw_graphs(network, figures, model, results_agents, results_model):
     Draw different figures.
     """
     if network:
-        plt.figure(figsize=(12, 12))
-        nx.draw(model.H1, node_color=color_agents(
+        fig, ax = plt.subplots(figsize=(12, 12))
+        # plt.figure(figsize=(12, 12))
+        nx.draw_networkx(model.H1, node_color=color_agents(
             1, "Recycling", "recycle", "landfill", model, results_agents),
-                node_size=5, with_labels=False)
+                node_size=5, with_labels=False, ax=ax)
         # Draw other networks:
         # nx.draw(model.H1, node_color="lightskyblue")
         # nx.draw(model.H2, node_color="purple")
@@ -130,15 +97,12 @@ def draw_graphs(network, figures, model, results_agents, results_model):
         # nx.draw(model.G, with_labels=False)
     if figures:
         results_model[results_model.columns[2:7]].plot()
-        results_model[results_model.columns[15:20]].plot()
+        results_model[results_model.columns[16:21]].plot()
         plt.text(0.6, 0.7, 'Landfilling').set_color("red")
         plt.text(0.6, 0.8, 'Recycling').set_color("green")
         plt.text(0.6, 0.9, 'Other behavior').set_color("grey")
-    if network or figures:
-        plt.show()  # draw graph as desired and plot outputs
+#    if network or figures:
+#        plt.show()  # draw graph as desired and plot outputs
 
-
-run_model(5, 31)
-
-
-
+### Run the model, change number of runs and steps as desired
+run_model(number_run, 30)

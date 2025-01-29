@@ -3,10 +3,18 @@
 Created on Wed Nov 21 09:33 2019
 
 @author Julien Walzberg - Julien.Walzberg@nrel.gov
+Modified December 2024 by Agnese Fuortes
 
 Model - agent-based simulations of the circular economy (ABSiCE)
-"""
 
+"""
+# Configuration variable to choose the import
+USE = False  # Set to False to use climate change metamodel
+
+if USE:
+    from metamodel.Metamodel_HDMR_R import Metamodel_HDMR as hdmr
+else:
+    from metamodel.Metamodel_HDMR_CC import Metamodel_HDMR as hdmr
 from mesa import Model
 from ABM_CE_PV_ConsumerAgents import Consumers
 from ABM_CE_PV_RecyclerAgents import Recyclers
@@ -18,7 +26,7 @@ from mesa.datacollection import DataCollector
 import networkx as nx
 import numpy as np
 from math import *
-import matplotlib.pyplot as plt
+from math_functions import *
 import pandas as pd
 import random
 
@@ -205,12 +213,16 @@ class ABM_CE_PV(Model):
     """
 
     def __init__(self,
-                 seed=None,
+                 seed,
+                 threshold_concern,
+                 threshold_indifference,
+                 positive_feedback,
+                 negative_feedback,
                  calibration_n_sensitivity=1,
-                 calibration_n_sensitivity_2=1,
-                 calibration_n_sensitivity_3=1,
-                 calibration_n_sensitivity_4=1,
-                 calibration_n_sensitivity_5=1,
+                #  calibration_n_sensitivity_2=1,
+                #  calibration_n_sensitivity_3=1,
+                #  calibration_n_sensitivity_4=1,
+                #  calibration_n_sensitivity_5=1,
                  num_consumers=1000,
                  consumers_node_degree=10,
                  consumers_network_type="small-world",
@@ -222,9 +234,9 @@ class ABM_CE_PV(Model):
                  num_refurbishers=15,
                  consumers_distribution={"residential": 1,
                                          "commercial": 0., "utility": 0.},
-                 init_eol_rate={"repair": 0.005, "sell": 0.01,
-                                   "recycle": 0.1, "landfill": 0.4425,
-                                   "hoard": 0.4425},
+                ## Modified the initial EoL rates, due to exclusion of pathways of repair and hoard
+                 init_eol_rate={"repair": 0.005, "sell": 0.02, "recycle": 0.1,
+                                "landfill": 0.4375, "hoard": 0.4375},
                  init_purchase_choice={"new": 0.9995, "used": 0.0005,
                                        "certified": 0},
                  total_number_product=[38, 38, 38, 38, 38, 38, 38, 139, 251,
@@ -248,15 +260,15 @@ class ABM_CE_PV(Model):
                  theory_of_planned_behavior={
                      "residential": True, "commercial": True, "utility": True},
                  w_sn_eol=0.27,
-                 w_pbc_eol=0.44,
+                 w_pbc_eol=0.33,
                  w_a_eol=0.39,
                  w_sn_reuse=0.497,
                  w_pbc_reuse=0.382,
                  w_a_reuse=0.464,
                  product_lifetime=30,
-                 all_EoL_pathways={"repair": True, "sell": True,
+                 all_EoL_pathways={"repair": False, "sell": True,
                                    "recycle": True, "landfill": True,
-                                   "hoard": True},
+                                   "hoard": False},
                  max_storage=[1, 8, 4],
                  att_distrib_param_eol=[0.544, 0.1],
                  att_distrib_param_reuse=[0.223, 0.262],
@@ -314,8 +326,8 @@ class ABM_CE_PV(Model):
                                        "Silver": 0.},
                  recovery_fractions={"Product": np.nan, "Aluminum": 0.92,
                                        "Glass": 0.85, "Copper": 0.72,
-                                       "Insulated cable": 1, "Silicon": 0,
-                                       "Silver": 0},
+                                       "Insulated cable": 1, "Silicon": 0.5,  ###### HERE silicon and silver changed from 0 to 0.5
+                                       "Silver": 0.5},
                  product_average_wght=0.1,
                  mass_to_function_reg_coeff=0.03,
                  recycling_states=[
@@ -345,8 +357,12 @@ class ABM_CE_PV(Model):
         """
         # Set up variables
         self.seed = seed
+        self.threshold_concern = threshold_concern
+        self.threshold_indifference = threshold_indifference  
+        self.positive_feedback = positive_feedback  
+        self.negative_feedback = negative_feedback
         att_distrib_param_eol[0] = calibration_n_sensitivity
-        att_distrib_param_reuse[0] = calibration_n_sensitivity_2
+        # att_distrib_param_reuse[0] = calibration_n_sensitivity_2
         #original_recycling_cost = [x * calibration_n_sensitivity_3 for x in
          #                          original_recycling_cost]
         #landfill_cost = [x * calibration_n_sensitivity_4 for x in
@@ -365,7 +381,8 @@ class ABM_CE_PV(Model):
         self.prod_n_recyc_node_degree = prod_n_recyc_node_degree
         self.prod_n_recyc_network_type = prod_n_recyc_network_type
         self.num_refurbishers = num_refurbishers
-        self.init_eol_rate = init_eol_rate
+        ## Modified the initial EoL rates, due to exclusion of pathways of repair and hoard 
+        self.init_eol_rate = self.eol_rate_update(init_eol_rate) 
         self.init_purchase_choice = init_purchase_choice
         self.clock = 0
         self.total_number_product = total_number_product
@@ -505,6 +522,8 @@ class ABM_CE_PV(Model):
                                    x in original_repairing_cost]
         landfill_cost = [x + self.transportation_cost_rpr_ldf for x in
                          landfill_cost]
+        self.x_hdmr = self.init_hdmr()
+        self.impact_count = self.impact_calculation()
 
         # Create agents, G nodes labels are equal to agents' unique_ID
         for node in self.G.nodes():
@@ -551,6 +570,10 @@ class ABM_CE_PV(Model):
             self.report_output("year"),
             "Average weight of waste": lambda c:
             self.report_output("weight"),
+            "Impact count": lambda c:
+            self.impact_count,   ###HERE added reporting of impact
+            "Effect": lambda c:
+            self.impact_effect(), 
             "Agents repairing": lambda c: self.count_EoL("repairing"),
             "Agents selling": lambda c: self.count_EoL("selling"),
             "Agents recycling": lambda c: self.count_EoL("recycling"),
@@ -571,7 +594,8 @@ class ABM_CE_PV(Model):
             self.report_output("prod_stock_used_mass"),
             "End-of-life - repaired": lambda c:
             self.report_output("product_repaired"),
-            "End-of-life - sold": lambda c: self.report_output("product_sold"),
+            "End-of-life - sold": lambda c: 
+            self.report_output("product_sold"),
             "End-of-life - recycled": lambda c:
             self.report_output("product_recycled"),
             "End-of-life - landfilled": lambda c:
@@ -636,7 +660,11 @@ class ABM_CE_PV(Model):
                 lambda a: getattr(a, "number_product_landfilled", None),
             "Number_product_hoarded":
                 lambda a: getattr(a, "number_product_hoarded", None),
-            "Recycling":
+            "Attitude before feedback":
+                lambda a: getattr(a, "attitude_level", None),
+            "Attitude after feedback": 
+                lambda a: a.get_tpb_attitude_eol() if isinstance(a, Consumers) else None,                           
+            "EoL pathway":
                 lambda a: getattr(a, "EoL_pathway", None),
             "Landfilling costs":
                 lambda a: getattr(a, "landfill_cost", None),
@@ -666,6 +694,139 @@ class ABM_CE_PV(Model):
         self.datacollector = DataCollector(
             model_reporters=ABM_CE_PV_model_reporters,
             agent_reporters=ABM_CE_PV_agent_reporters)
+
+    def eol_rate_update(self, init_eol_rate):
+        """
+        Compute new shares of EoL pathways
+        """
+        baseline = init_eol_rate
+        # Removing Repair and Storage by setting them to 0
+        updated_baseline = { "repair": 0,
+                            "sell": baseline["sell"],
+                            "recycle": baseline["recycle"], 
+                            "landfill": baseline["landfill"],
+                            "hoard": 0}
+        # Total percentage of Reuse, Recycle, and Landfill after removing Repair and Storage
+        remaining_percentage = updated_baseline["sell"] + updated_baseline["recycle"] + updated_baseline["landfill"]
+        # Normalize to keep proportions for Reuse, Recycle, and Landfill so they sum to 1
+        reuse_share = (updated_baseline["sell"] / remaining_percentage)
+        recycle_share = (updated_baseline["recycle"] / remaining_percentage)
+        landfill_share = (updated_baseline["landfill"] / remaining_percentage)
+        # Create the updated distribution
+        updated_distribution = {
+            "repair": 0,
+            "sell": reuse_share,
+            "recycle": recycle_share,
+            "landfill": landfill_share,
+            "hoard": 0}
+        return updated_distribution
+
+    def init_hdmr(self):
+        """
+        Initialize the metamodel input.
+        """
+        # Define min, max, and mode values for each fixed parameter
+        # The mode is the value assigned to the parameter
+        # The min and max values are used for the normalization
+        params_fixed = {
+            'rt_movpe': (0.5, 3.5, 3.5),
+            'p_movpe_tool': (1, 509, 509),
+            'eff_pv': (0.25, 0.31, 0.28),
+            'pr_pv': (0.8, 0.9, 0.85),
+            'cu_zeol': (0.2, 0.7, 0.3),
+            'Al_panel': lognormal_stats(0.97, 0.199),
+            'glass_panel': lognormal_stats(2.31, 0.199),
+            'elec_panel': lognormal_stats(1.55, 0.199),
+            'zeol_scrub': (2.55, 7.65, 7.65),
+            'elec_siem': lognormal_stats(4.7, 0.199),
+            'heat_siem': lognormal_stats(5.22, 0.199),
+            'elec_cz': lognormal_stats(4.44, 0.199),
+            'scsi_cz': lognormal_stats(0.07, 0.199)
+        }
+        # Define min and max values for each linking parameter
+        # The initialised values from the ABM are assigned to the parameter
+        # The min and max values are used for the normalization
+        params_linking = {
+            'lifetime': normal_stats(30, 5), 
+            #eol fractions
+            'landfill': (0, 0.99), 
+            'reuse': (0, 0.99),
+            #recovery fractions
+            'copper': (0.5, 0.99),
+            'aluminum': (0.5, 0.99),
+            'glass': (0.5, 0.99),
+            'silicon': (0.5, 0.99),
+            'silver': (0.5, 0.99),
+            'gallium': (0.5, 0.99),
+            'indium': (0.5, 0.99)
+        }
+        landfill_fraction = self.init_eol_rate["landfill"] / (self.init_eol_rate["landfill"] + self.init_eol_rate["recycle"])
+        reuse_fraction = self.init_eol_rate["sell"] / (self.init_eol_rate["landfill"] + self.init_eol_rate["recycle"] + self.init_eol_rate["sell"])
+        # Calculate normalized values
+        x_hdmr = [
+            normalize_value(params_fixed['rt_movpe'][2], params_fixed['rt_movpe'][0], params_fixed['rt_movpe'][1]),
+            normalize_value(params_fixed['p_movpe_tool'][2], params_fixed['p_movpe_tool'][0], params_fixed['p_movpe_tool'][1]),
+            normalize_value(params_fixed['eff_pv'][2], params_fixed['eff_pv'][0], params_fixed['eff_pv'][1]),
+            normalize_value(params_fixed['pr_pv'][2], params_fixed['pr_pv'][0], params_fixed['pr_pv'][1]),
+            normalize_value(params_fixed['cu_zeol'][2], params_fixed['cu_zeol'][0], params_fixed['cu_zeol'][1]),
+            normalize_value(self.recovery_fractions["Copper"], params_linking['copper'][0], params_linking['copper'][1]),
+            normalize_value(params_fixed['Al_panel'][2], params_fixed['Al_panel'][0], params_fixed['Al_panel'][1]),
+            normalize_value(params_fixed['glass_panel'][2], params_fixed['glass_panel'][0], params_fixed['glass_panel'][1]),
+            normalize_value(params_fixed['elec_panel'][2], params_fixed['elec_panel'][0], params_fixed['elec_panel'][1]),
+            normalize_value(params_fixed['zeol_scrub'][2], params_fixed['zeol_scrub'][0], params_fixed['zeol_scrub'][1]),
+            normalize_value(self.product_lifetime, params_linking['lifetime'][0], params_linking['lifetime'][1]),
+            normalize_value(landfill_fraction, params_linking['landfill'][0], params_linking['landfill'][1]),
+            normalize_value(reuse_fraction, params_linking['reuse'][0], params_linking['reuse'][1]),
+            normalize_value(self.recovery_fractions["Aluminum"], params_linking['aluminum'][0], params_linking['aluminum'][1]),
+            normalize_value(self.recovery_fractions["Glass"], params_linking['glass'][0], params_linking['glass'][1]),
+            normalize_value(self.recovery_fractions["Silicon"], params_linking['silicon'][0], params_linking['silicon'][1]),
+            normalize_value(self.recovery_fractions["Silver"], params_linking['silver'][0], params_linking['silver'][1]),
+            normalize_value(0.99, params_linking['gallium'][0], params_linking['gallium'][1]),
+            normalize_value(0.99, params_linking['indium'][0], params_linking['indium'][1]),
+            normalize_value(params_fixed['elec_siem'][2], params_fixed['elec_siem'][0], params_fixed['elec_siem'][1]),
+            normalize_value(params_fixed['heat_siem'][2], params_fixed['heat_siem'][0], params_fixed['heat_siem'][1]),
+            normalize_value(params_fixed['elec_cz'][2], params_fixed['elec_cz'][0], params_fixed['elec_cz'][1]),
+            normalize_value(params_fixed['scsi_cz'][2], params_fixed['scsi_cz'][0], params_fixed['scsi_cz'][1])
+        ]
+        return np.array(x_hdmr).reshape((23, 1))
+
+    def update_metamodel_inputs(self):
+        """
+        Update metamodel inputs according to evolving EoL fractions
+        """
+        x_hdmr = self.init_hdmr()
+        product_recycled = self.report_output("product_new_recycled") + self.report_output("product_used_recycled")
+        product_landfilled = self.report_output("product_new_landfilled") + self.report_output("product_used_landfilled")
+        product_sold = self.report_output("product_new_sold") + self.report_output("product_used_sold")
+        landfill_fraction = product_landfilled / (product_landfilled + product_recycled)
+        reuse_fraction = product_sold / (product_landfilled + product_recycled + product_sold)
+
+        # Update only the elements that change
+        x_hdmr[11] = landfill_fraction / 0.99  # Landfill_fraction
+        x_hdmr[12] = reuse_fraction / 0.99  # Reuse_fraction
+
+        return x_hdmr
+        
+    def impact_calculation (self):
+        """
+        Calculate the impact of the model using the HDMR metamodel
+        """
+        (impact_count, (m1, m2)) = hdmr(self.x_hdmr)
+
+        return float(impact_count)
+    
+    def impact_effect(self):
+        """
+        Calculate the effect of material depletion on the pro-environmental
+        attitude level of agents.
+        """
+        if self.impact_count > self.threshold_concern:
+            impact_effect = self.positive_feedback
+        elif self.impact_count < self.threshold_indifference:
+            impact_effect = self.negative_feedback
+        else:
+            impact_effect = 0
+        return impact_effect
 
     def shortest_paths(self, target_states, distances_to_target):
         """
@@ -995,4 +1156,6 @@ class ABM_CE_PV(Model):
         self.update_dynamic_lifetime()
         self.average_price_per_function_model()
         self.schedule.step()
+        self.impact_count = self.impact_calculation()
+        self.x_hdmr = self.update_metamodel_inputs()
         self.clock = self.clock + 1

@@ -1,0 +1,39 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: PV-ABM-LCA
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Agnese
+    family-names: Fuortes
+    email: agnese.fuortes@rivm.nl
+    affiliation: RIVM
+    orcid: 'https://orcid.org/0009-0008-5164-9340'
+  - given-names: Joris
+    family-names: Quik
+    email: joris.quik@rivm.nl
+    affiliation: RIVM
+    orcid: 'https://orcid.org/0000-0002-7964-3652'
+  - given-names: Carlos Felipe
+    family-names: Blanco Rocha
+    email: c.f.blanco@cml.leidenuniv.nl
+    affiliation: Leiden University
+    orcid: 'https://orcid.org/0000-0001-8199-8420'
+abstract: >-
+  PV-ABM-LCA is the pilot integration of an ABM and an LCA
+  based on two preexistent models: the LCA on III-V/Silicon
+  photovoltaic (PV) panels from Blanco et al. (2020) and the
+  ABM on end-of-life crystalline silicon (C-Si) PV panels
+  from Walzberg et al. (2021).
+keywords:
+  - LCA
+  - ABM
+  - PV
+  - Integration
+license: EUPL-1.2
+version: '1.0'
+date-released: '2024-12-19'

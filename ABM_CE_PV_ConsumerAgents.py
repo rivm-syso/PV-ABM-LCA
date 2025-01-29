@@ -1,10 +1,12 @@
 # -*- coding:utf-8 -*-
 """
 Created on Wed Nov 20 12:40 2019
-
 @author Julien Walzberg - Julien.Walzberg@nrel.gov
 
+Modified December 2024 by Agnese Fuortes
+
 Agent - Consumer
+
 """
 
 from mesa import Agent
@@ -385,23 +387,20 @@ class Consumers(Agent):
         Calculate pro-environmental attitude component of EoL TPB rule. Options
         considered pro environmental get a higher score than other options.
         """
+        impact_mult = 1 + self.model.impact_effect()
         for i in range(len(att_levels)):
             if decision == "EoL_pathway":
                 if list(self.model.all_EoL_pathways.keys())[i] == "repair" or \
                         list(self.model.all_EoL_pathways.keys())[i] == "sell" \
                         or list(self.model.all_EoL_pathways.keys())[i] == \
                         "recycle":
-                    att_levels[i] = att_level
-                    # HERE modification for encouraging recycling
-                    # if list(self.model.all_EoL_pathways.keys())[i] ==
-                    # "recycle":
-                    # att_levels[i] = att_level * 1.0
+                    att_levels[i] = min(att_level * impact_mult, 1) ##max out att_level at 1
                 else:
-                    att_levels[i] = 1 - att_level
+                    att_levels[i] = 1 - min(att_level * impact_mult, 1)
             elif decision == "purchase_choice":
                 if self.purchase_choices[i] == "used" or \
                         self.purchase_choices[i] == "certified":
-                    att_levels[i] = att_level
+                    att_levels[i] = min(att_level * impact_mult, 1) ##max out att_level at 1
                 else:
                     att_levels[i] = 1 - att_level
         return [weight_a * x for x in att_levels]
@@ -562,7 +561,7 @@ class Consumers(Agent):
                                     self.number_used_product_EoL,
                                     product_type,
                                     self.product_storage_to_other)
-
+                
     def update_eol_volumes(self, eol_pathway, managed_waste, product_type,
                            storage):
         """"
@@ -710,6 +709,9 @@ class Consumers(Agent):
             self.mass_per_function_model(last_capacity_new)
         self.used_products_mass += \
             self.mass_per_function_model(last_capacity_used)
+        
+    def get_tpb_attitude_eol(self):
+        return self.tpb_attitude("EoL_pathway", self.attitude_levels_pathways, self.attitude_level, self.w_a_eol)
 
     def step(self):
         """

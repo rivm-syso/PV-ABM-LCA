@@ -1,7 +1,7 @@
 ## General Description of Preexistent Scripts
 Below the implementation of changes and coupling of LCA and ABM are described based on Fuortes et al. (2025).
 
-### 1. ABM_CE_PV_Model
+### 1. [ABM_CE_PV_Model](Integrated_ABM/ABM_CE_PV_Model.py)
 This script defines the primary rules and functions of the Agent-Based Model (ABM). At every timestep, these functions are executed to ensure the model operates as intended.
 Key tasks include:
 - Importing the metamodel.
@@ -46,7 +46,7 @@ Key tasks include:
   - Checks whether the impact count is above the concern threshold, below the indifference threshold, or in between to decide between a positive_feedback (default=1), negative_feedback(default=-0.5) or no feedback.
   - Returns the calculated effect.
 
-### 2. ABM_CE_PV_ConsumerAgents
+### 2. [ABM_CE_PV_ConsumerAgents](Integrated_ABM/ABM_CE_PV_ConsumerAgents.py)
 This script defines the rules at the agent level, which are applied to each agent at every timestep. The most important rule is the theory of planned behavior, based on which the agents make a choice about the end of life. A key function, tpb_attitude, has been modified to incorporate the impact_effect() function.
 ##### Function: `tpb_attitude()`
 - **Description**: Assigns an attitude level to each agent based on their decision-making process. Options considered pro-environmental get a higher score than other options by default. Then the attitude is modified by multiplying it with `1+effect`. The effect is calculated with impact_eff() function. 
@@ -57,15 +57,15 @@ This script defines the rules at the agent level, which are applied to each agen
   - For purchase choices, it adjusts the attitude level based on whether the option is considered pro-environmental (used, certified) or not.
   - Returns the weighted attitude levels.
 
-### 3. ABM_CE_PV_MultipleRun
+### 3. [ABM_CE_PV_MultipleRun](Run_visualize/ABM_CE_PV_MultipleRun.py)
 This script defines the number of runs and fixes variable parameters for each run. It was used to find the values for max and min impact.
 
-### 4. ABM_CE_PV_ProducerAgents, ABM_CE_PV_RecyclerAgents, ABM_CE_PV_RefurbisherAgents, and ABM_CE_PV_BatchRun
-These scripts define the behavior of different types of agents (producers, recyclers, refurbishers) and the batch run process. These scripts have not been modified.
+### 4. [ABM_CE_PV_ProducerAgents](Integrated_ABM/ABM_CE_PV_ProducerAgents.py), [ABM_CE_PV_RecyclerAgents](Integrated_ABM/ABM_CE_PV_RecyclerAgents.py), [ABM_CE_PV_RefurbisherAgents](Integrated_ABM/ABM_CE_PV_RefurbisherAgents.py)
+These scripts define the behavior of different types of agents (producers, recyclers, refurbishers). These scripts have not been modified.
 
 ## General Description of Additional Scripts
 
-### 1. batch_run
+### 1. [batch_run](Run_visualize/batch_run.py)
 This script runs multiple simulations in batch mode, allowing for the analysis of different scenarios and parameter settings.
 #### Key Parameters
 - `step`: The step size for adjusting the thresholds.
@@ -84,10 +84,10 @@ This script runs multiple simulations in batch mode, allowing for the analysis o
 3. **Run the Batch with a Progress Bar**: Execute the batch run using the batch_run function from the mesa library, with a progress bar to display the progress.
 4. **Save the Results**: Save the results of the batch run to a csv file.
 
-### 2. batch_visualize
+### 2. [batch_visualize](Run_visualize/batch_visualize.ipynb)
 This script visualizes the results of the batch runs, creating plots and charts to help analyze the outcomes of the simulations.
 
-### 3. math_functions
+### 3. [math_functions](Integrated_ABM/math_functions.py)
 This script, `math_functions.py`, contains a collection of mathematical functions for statistical calculations and normalization. The functions provided are useful for working with lognormal and normal distributions, as well as for normalizing values within a specified range.
 #### Functions
 - **lognormal_stats(mu, sigma)**
@@ -113,19 +113,19 @@ This script, `math_functions.py`, contains a collection of mathematical function
   - **Returns**: The normalized value.
   - **Raises**: `ValueError` if `min_value` and `max_value` are the same.
 
-### 4. Scripts in metamodel folder
+### Scripts in LCA_metamodel folder
 
-#### 4.1 visualize_metamodel
+#### 4.1 [visualize_metamodel](LCA_metamodel/visualize_metamodel.py)
 This script visualizes the metamodel results, providing insights into the behavior and performance of the metamodel.
 
-#### 4.2 Metamodel_HDMR_CC
+#### 4.2 [Metamodel_HDMR_CC](LCA_metamodel/Metamodel_HDMR_CC.py)
 This script implements the high-dimensional model representation (HDMR) for climate change (CC) analysis.
 
-#### 4.3 Metamodel_HDMR_RD
+#### 4.3 [Metamodel_HDMR_RD](LCA_metamodel/Metamodel_HDMR_RD.py)
 This script implements the high-dimensional model representation (HDMR) for abiotic resource depletion (RD) analysis.
 
-#### 4.4 LegendreShiftPoly
+#### 4.4 [LegendreShiftPoly](LCA_metamodel/LegendreShiftPoly.py)
 This script contains functions for working with Legendre shifted polynomials, which are used in the HDMR metamodel.
 
-#### 4.5. LCA_output
+#### 4.5 [LCA_output](LCA_metamodel/LCA_output.py)
 This script processes the life cycle assessment (LCA) output data for use in the metamodel.

@@ -1,4 +1,4 @@
-from ABM_CE_PV_Model import *
+from Integrated_ABM.ABM_CE_PV_Model import *
 from mesa.batchrunner import batch_run
 import time
 import pandas as pd

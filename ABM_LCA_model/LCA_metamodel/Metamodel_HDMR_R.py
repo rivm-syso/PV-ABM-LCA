@@ -16,7 +16,7 @@
 
 import sys
 import numpy as np
-import metamodel.LegendreShiftPoly as lsp
+import LCA_metamodel.LegendreShiftPoly as lsp
 
 def Metamodel_HDMR(x_in, *varargin):
 

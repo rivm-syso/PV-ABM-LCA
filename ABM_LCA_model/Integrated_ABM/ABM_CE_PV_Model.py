@@ -16,17 +16,17 @@ if USE:
 else:
     from LCA_metamodel.Metamodel_HDMR_CC import Metamodel_HDMR as hdmr
 from mesa import Model
-from ABM_CE_PV_ConsumerAgents import Consumers
-from ABM_CE_PV_RecyclerAgents import Recyclers
-from ABM_CE_PV_RefurbisherAgents import Refurbishers
-from ABM_CE_PV_ProducerAgents import Producers
+from Integrated_ABM.ABM_CE_PV_ConsumerAgents import Consumers
+from Integrated_ABM.ABM_CE_PV_RecyclerAgents import Recyclers
+from Integrated_ABM.ABM_CE_PV_RefurbisherAgents import Refurbishers
+from Integrated_ABM.ABM_CE_PV_ProducerAgents import Producers
 from mesa.time import BaseScheduler
 from mesa.space import NetworkGrid
 from mesa.datacollection import DataCollector
 import networkx as nx
 import numpy as np
 from math import *
-from math_functions import *
+from Integrated_ABM.math_functions import *
 import pandas as pd
 import random
 
@@ -491,14 +491,14 @@ class ABM_CE_PV(Model):
                       'Maryland', 'Massachusetts', 'Vermont',
                       'New Hampshire', 'New Jersey', 'Connecticut',
                       'Delaware', 'Rhode Island']
-        self.states = pd.read_csv("StatesAdjacencyMatrix.csv").to_numpy()
+        self.states = pd.read_csv("ABM_LCA_model/Integrated_ABM/StatesAdjacencyMatrix.csv").to_numpy()
         # Compute distances
         self.mean_distance_within_state = np.nanmean(
             np.where(self.states != 0, self.states, np.nan)) / 2
         self.states_graph = nx.from_numpy_matrix(self.states)
         nodes_states_dic = \
             dict(zip(list(self.states_graph.nodes),
-                     list(pd.read_csv("StatesAdjacencyMatrix.csv"))))
+                     list(pd.read_csv("ABM_LCA_model/Integrated_ABM/StatesAdjacencyMatrix.csv"))))
         self.states_graph = nx.relabel_nodes(self.states_graph,
                                              nodes_states_dic)
         self.recycling_states = recycling_states

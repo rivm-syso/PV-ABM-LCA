@@ -1,6 +1,5 @@
 # This CITATION.cff file was generated with cffinit.
 # Visit https://bit.ly/cffinit to generate yours today!
-
 cff-version: 1.2.0
 title: PV-ABM-LCA
 message: >-
@@ -36,4 +35,5 @@ keywords:
   - Integration
 license: EUPL-1.2
 version: '1.0'
-date-released: '2024-12-19'
+date-released: 2025-02-03
+doi: 10.21945/28ef999c-a59f-4217-9a1f-49f285b401af

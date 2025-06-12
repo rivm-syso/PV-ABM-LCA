@@ -1,4 +1,4 @@
-# PV-ABM-LCA
+# PV-ABM-LCA ![DOI](https://zenodo.org/badge/DOI/10.21945/28ef999c-a59f-4217-9a1f-49f285b401af.svg)
 
 PV-ABM-LCA is the pilot integration of an ABM and an LCA based on two preexistent models: the LCA on III-V/Silicon photovoltaic (PV) panels from Blanco et al. (2024) and the ABM on end-of-life crystalline silicon (C-Si) PV panels from Walzberg et al. (2021).
 
